@@ -87,19 +87,7 @@ export async function generarPDFReporte(
   try {
     // Import dinámico de Playwright (solo se carga cuando se ejecuta la función)
     // En Vercel, Playwright se instala automáticamente durante el build
-    // Usar función helper para evitar análisis estático de TypeScript
-    const playwrightModule = await (async () => {
-      try {
-        // @ts-expect-error - Playwright se carga dinámicamente, no disponible en build time
-        return await import('playwright');
-      } catch (error) {
-        throw new Error(
-          'Playwright no está disponible. ' +
-          'Asegúrate de que Playwright esté instalado: npm install playwright'
-        );
-      }
-    })();
-    const { chromium } = playwrightModule;
+    const { chromium } = await import('playwright');
     
     // Asegurar que el directorio de storage existe
     await mkdir(PDF_STORAGE_DIR, { recursive: true });
