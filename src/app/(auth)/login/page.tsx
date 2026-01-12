@@ -1,25 +1,50 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+
+/**
+ * Componente interno que maneja el mensaje de éxito desde searchParams
+ * Debe estar envuelto en Suspense para Next.js 16
+ */
+function SuccessMessage() {
+  const searchParams = useSearchParams();
+  const registered = searchParams.get('registered') === 'true';
+  
+  if (!registered) return null;
+  
+  return (
+    <div className="rounded-lg bg-green-50 border border-green-100 p-3">
+      <div className="flex items-center gap-2">
+        <svg
+          className="h-5 w-5 text-green-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+        <p className="text-sm font-medium text-green-700">
+          Cuenta creada exitosamente. Inicia sesión con tus credenciales.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // Mostrar mensaje de registro exitoso
-  useEffect(() => {
-    if (searchParams.get('registered') === 'true') {
-      setSuccess('Cuenta creada exitosamente. Inicia sesión con tus credenciales.');
-    }
-  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,26 +173,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {success && (
-              <div className="rounded-lg bg-green-50 border border-green-100 p-3">
-                <div className="flex items-center gap-2">
-                  <svg
-                    className="h-5 w-5 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <p className="text-sm font-medium text-green-700">{success}</p>
-                </div>
-              </div>
-            )}
+            <Suspense fallback={null}>
+              <SuccessMessage />
+            </Suspense>
 
             {error && (
               <div className="rounded-lg bg-red-50 border border-red-100 p-3">
