@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     const passwordHash = password; // TEMPORAL - Reemplazar con hash
 
     // Determinar rol basado en SUPER_ADMIN_EMAILS
-    let rol = Rol.EVALUADOR; // Por defecto
+    let rol: Rol = Rol.EVALUADOR; // Por defecto
     try {
       if (isSuperAdminEmail(correoNormalizado)) {
         rol = Rol.SUPER_ADMIN;

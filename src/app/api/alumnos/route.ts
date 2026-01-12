@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
-import { Rol } from '@prisma/client';
+import { Rol, StatusAlumno } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -17,7 +17,7 @@ export async function GET() {
 
     // Evaluadores solo ven alumnos activos
     const whereClause = user.rol === Rol.EVALUADOR 
-      ? { status: 'ACTIVO' }
+      ? { status: StatusAlumno.ACTIVO }
       : {};
 
     const alumnos = await db.alumno.findMany({

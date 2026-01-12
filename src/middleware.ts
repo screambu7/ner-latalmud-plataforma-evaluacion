@@ -1,20 +1,37 @@
+/**
+ * ============================================================================
+ * EDGE MIDDLEWARE - AUTHENTICATION & AUTHORIZATION
+ * ============================================================================
+ * 
+ * ⚠️ CRITICAL CONSTRAINTS (Edge Runtime):
+ * 
+ * 1. NO DATABASE ACCESS
+ *    - Edge Runtime no soporta Prisma/PostgreSQL
+ *    - No podemos consultar BD para validar estado del usuario
+ *    - Solo podemos verificar el JWT (firma, expiración, estructura)
+ * 
+ * 2. NO NODE APIs
+ *    - No usar Node.js crypto, fs, etc.
+ *    - Usar solo Web APIs compatibles con Edge
+ *    - jose library es compatible (usa Web Crypto API)
+ * 
+ * 3. ROLE STALENESS TRADE-OFF
+ *    - El middleware valida el rol del JWT, no el de la BD
+ *    - Si un usuario es degradado/desactivado, el JWT sigue válido hasta expirar (7 días)
+ *    - Esto es un trade-off aceptable para mantener Edge compatibility
+ *    - Las rutas API (server-side) SÍ validan el estado actual usando getCurrentUser()
+ * 
+ * 4. STATELESS BY DESIGN
+ *    - No side effects (no logging a BD, no actualización de sesiones)
+ *    - Solo lectura de cookie, verificación JWT, y redirección
+ * 
+ * ============================================================================
+ */
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { Rol } from '@prisma/client';
 import { verifySessionJWT } from './lib/jwt';
-
-/**
- * Middleware stateless que verifica sesiones JWT sin acceso a DB (PR1).
- * 
- * ⚠️ IMPORTANTE: Este middleware NO usa Prisma/DB para ser compatible con Edge Runtime.
- * Solo verifica el JWT y el rol. La validación completa del estado
- * del usuario (ACTIVO/INACTIVO) se hace en las rutas API usando getCurrentUser().
- * 
- * ⚠️ LIMITACIÓN: Si un usuario es degradado (cambio de rol) o desactivado,
- * el JWT seguirá siendo válido hasta que expire (7 días). El middleware
- * no puede detectar estos cambios sin consultar la BD. Las rutas API
- * sí validan el estado actual usando getCurrentUser().
- */
 export async function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('session')?.value;
   const session = sessionCookie ? await verifySessionJWT(sessionCookie) : null;
