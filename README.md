@@ -1,36 +1,136 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Diagnóstico Ner Latalmud
 
-## Getting Started
+Sistema de diagnóstico educativo para evaluación de alumnos.
 
-First, run the development server:
+## 🚀 Inicio Rápido
+
+### Prerrequisitos
+
+- Node.js 18+ 
+- npm o yarn
+
+### Modo Mock (Sin Base de Datos) - RECOMENDADO PARA MVP
+
+El sistema funciona **sin base de datos** usando datos mock en memoria. Perfecto para demostrar el MVP.
+
+#### 1. Instalar dependencias
+
+```bash
+npm install
+```
+
+#### 2. Iniciar servidor
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+El servidor estará disponible en [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+#### 3. Usuarios de prueba (ya incluidos)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Admin Principal**: `admin@nerlatalmud.com`
+- **Admin General**: `admin2@nerlatalmud.com`
+- **Evaluador**: `evaluador@nerlatalmud.com`
 
-## Learn More
+**Nota:** Los datos se resetean al reiniciar el servidor (son en memoria).
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Modo con Base de Datos (Opcional)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Si prefieres usar PostgreSQL real:
 
-## Deploy on Vercel
+#### 1. Configurar base de datos
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Crea un archivo `.env` en la raíz del proyecto:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+DATABASE_URL="postgresql://usuario:password@localhost:5432/ner_latalmud?schema=public"
+```
+
+#### 2. Crear base de datos y tablas
+
+```bash
+# Generar cliente de Prisma
+npm run db:generate
+
+# Crear migraciones y aplicar esquema
+npm run db:migrate
+
+# Poblar datos de prueba
+npm run db:seed
+```
+
+**Nota:** Si no hay `DATABASE_URL` en `.env`, el sistema automáticamente usa datos mock.
+
+## 📋 Scripts Disponibles
+
+- `npm run dev` - Inicia servidor de desarrollo
+- `npm run build` - Construye para producción
+- `npm run start` - Inicia servidor de producción
+- `npm run db:migrate` - Crea y aplica migraciones
+- `npm run db:generate` - Genera cliente de Prisma
+- `npm run db:seed` - Pobla base de datos con datos de prueba
+- `npm run db:studio` - Abre Prisma Studio (GUI para BD)
+
+## 🔐 Login
+
+Usa cualquiera de estos correos para iniciar sesión:
+
+- `admin@nerlatalmud.com` → Dashboard Admin
+- `admin2@nerlatalmud.com` → Dashboard Admin
+- `evaluador@nerlatalmud.com` → Dashboard Evaluador
+
+**Nota:** 
+- El login es solo por email (sin contraseña) para esta fase
+- En modo mock, los datos se resetean al reiniciar el servidor
+
+## 📁 Estructura del Proyecto
+
+```
+src/
+├── app/
+│   ├── (admin)/          # Rutas protegidas para admin
+│   │   ├── alumnos/      # CRUD de alumnos
+│   │   └── ...
+│   ├── (evaluador)/      # Rutas protegidas para evaluador
+│   ├── (auth)/           # Rutas de autenticación
+│   │   └── login/
+│   └── api/              # API Routes
+│       ├── auth/         # Autenticación
+│       └── alumnos/       # CRUD API de alumnos
+├── lib/
+│   ├── auth.ts           # Funciones de autenticación
+│   ├── auth-utils.ts     # Utilidades de cookies
+│   ├── db.ts             # Cliente Prisma
+│   └── permissions.ts    # Permisos por rol
+└── middleware.ts         # Middleware de protección de rutas
+
+prisma/
+└── schema.prisma         # Esquema de base de datos
+```
+
+## 🎯 Funcionalidades Implementadas (Sprint 1)
+
+✅ Login por email  
+✅ Autenticación con cookies  
+✅ Protección de rutas por rol  
+✅ CRUD completo de alumnos  
+✅ Permisos: Solo admin puede modificar alumnos  
+
+## 🛠️ Stack Tecnológico
+
+- **Frontend**: Next.js 16 (App Router), React 19, TailwindCSS
+- **Backend**: Next.js API Routes
+- **Base de Datos**: PostgreSQL + Prisma ORM
+- **TypeScript**: Tipado estático
+
+## 📝 Notas
+
+- El sistema está en fase de desarrollo (Sprint 1)
+- La autenticación es básica (solo email, sin contraseña)
+- Las evaluaciones y reportes están pendientes (Sprint 2+)
+- **Modo Mock**: Funciona sin base de datos usando datos en memoria
+- Los datos mock se resetean al reiniciar el servidor
+- Para persistencia, configura PostgreSQL y crea el archivo `.env`

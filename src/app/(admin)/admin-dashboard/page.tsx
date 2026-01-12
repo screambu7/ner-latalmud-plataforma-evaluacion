@@ -1,10 +1,10 @@
-
-export default function Home() {
+export default function AdminDashboardPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold">
-        Diagnóstico Ner Latalmud
+        Dashboard Admin
       </h1>
     </div>
   );
 }
+

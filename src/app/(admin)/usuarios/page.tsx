@@ -1,10 +1,12 @@
-
-export default function Home() {
+export default function UsuariosPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold">
-        Diagnóstico Ner Latalmud
+        Usuarios
       </h1>
     </div>
   );
 }
+
+
+
