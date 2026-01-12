@@ -1,48 +1,85 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Rol } from '@prisma/client';
+import { SUPER_ADMIN_EMAILS, isSuperAdminEmail } from '../src/config/super-admins';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Iniciando seed...');
 
-  // Crear usuarios de prueba
-  const adminPrincipal = await prisma.usuario.upsert({
-    where: { correo: 'admin@nerlatalmud.com' },
-    update: {},
-    create: {
-      nombre: 'Admin Principal',
-      correo: 'admin@nerlatalmud.com',
-      rol: 'ADMIN_PRINCIPAL',
-      estado: 'ACTIVO',
+  // Definir usuarios a crear/actualizar
+  const usuariosSeed = [
+    {
+      correo: 'teddy@nerlatalmud.com',
+      nombre: 'Teddy',
+      rol: 'SUPER_ADMIN' as Rol,
     },
-  });
-
-  const adminGeneral = await prisma.usuario.upsert({
-    where: { correo: 'admin2@nerlatalmud.com' },
-    update: {},
-    create: {
-      nombre: 'Admin General',
-      correo: 'admin2@nerlatalmud.com',
-      rol: 'ADMIN_GENERAL',
-      estado: 'ACTIVO',
+    {
+      correo: 'moshe@nerlatalmud.com',
+      nombre: 'Moshe',
+      rol: 'SUPER_ADMIN' as Rol,
     },
-  });
-
-  const evaluador = await prisma.usuario.upsert({
-    where: { correo: 'evaluador@nerlatalmud.com' },
-    update: {},
-    create: {
-      nombre: 'Evaluador Test',
+    {
       correo: 'evaluador@nerlatalmud.com',
-      rol: 'EVALUADOR',
-      estado: 'ACTIVO',
+      nombre: 'Evaluador Test',
+      rol: 'EVALUADOR' as Rol,
     },
-  });
+  ];
 
-  console.log('✅ Usuarios creados:');
-  console.log('  - Admin Principal:', adminPrincipal.correo);
-  console.log('  - Admin General:', adminGeneral.correo);
-  console.log('  - Evaluador:', evaluador.correo);
+  // Crear/actualizar usuarios
+  const usuariosCreados = [];
+  for (const usuarioData of usuariosSeed) {
+    // Determinar rol: si el correo está en SUPER_ADMIN_EMAILS, forzar SUPER_ADMIN
+    const rolFinal = isSuperAdminEmail(usuarioData.correo)
+      ? 'SUPER_ADMIN'
+      : usuarioData.rol;
+
+    const usuario = await prisma.usuario.upsert({
+      where: { correo: usuarioData.correo },
+      update: {
+        // Actualizar rol si el correo está en la lista de super admins
+        rol: isSuperAdminEmail(usuarioData.correo) ? 'SUPER_ADMIN' : undefined,
+        nombre: usuarioData.nombre,
+        estado: 'ACTIVO',
+      },
+      create: {
+        nombre: usuarioData.nombre,
+        correo: usuarioData.correo,
+        rol: rolFinal,
+        estado: 'ACTIVO',
+      },
+    });
+
+    usuariosCreados.push(usuario);
+    console.log(`  ✅ ${usuario.nombre} (${usuario.correo}) - Rol: ${usuario.rol}`);
+  }
+
+  // Asegurar que todos los correos en SUPER_ADMIN_EMAILS tengan rol SUPER_ADMIN
+  for (const email of SUPER_ADMIN_EMAILS) {
+    const usuario = await prisma.usuario.findUnique({
+      where: { correo: email },
+    });
+
+    if (usuario && usuario.rol !== 'SUPER_ADMIN') {
+      await prisma.usuario.update({
+        where: { correo: email },
+        data: { rol: 'SUPER_ADMIN' },
+      });
+      console.log(`  🔄 Actualizado ${email} a SUPER_ADMIN`);
+    } else if (!usuario) {
+      // Si no existe, crear con rol SUPER_ADMIN
+      await prisma.usuario.create({
+        data: {
+          correo: email,
+          nombre: email.split('@')[0], // Usar parte antes del @ como nombre
+          rol: 'SUPER_ADMIN',
+          estado: 'ACTIVO',
+        },
+      });
+      console.log(`  ✅ Creado ${email} como SUPER_ADMIN`);
+    }
+  }
+
+  console.log('✅ Usuarios procesados');
 
   // Crear algunos alumnos de ejemplo
   const alumno1 = await prisma.alumno.create({

@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { db } from './lib/db';
+import { Rol } from '@prisma/client';
 
 export async function middleware(request: NextRequest) {
   const userId = request.cookies.get('user_id')?.value;
+
+  // Redirigir página principal al login
+  if (request.nextUrl.pathname === '/') {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
 
   // Rutas públicas
   if (request.nextUrl.pathname === '/login') {
@@ -15,9 +21,9 @@ export async function middleware(request: NextRequest) {
         });
 
         if (user && user.estado === 'ACTIVO') {
-          if (user.rol === 'ADMIN_PRINCIPAL' || user.rol === 'ADMIN_GENERAL') {
+          if (user.rol === Rol.SUPER_ADMIN) {
             return NextResponse.redirect(new URL('/admin-dashboard', request.url));
-          } else if (user.rol === 'EVALUADOR') {
+          } else if (user.rol === Rol.EVALUADOR) {
             return NextResponse.redirect(new URL('/evaluador-dashboard', request.url));
           }
         }
@@ -49,7 +55,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url));
       }
 
-      if (user.rol !== 'ADMIN_PRINCIPAL' && user.rol !== 'ADMIN_GENERAL') {
+      if (user.rol !== Rol.SUPER_ADMIN) {
         return NextResponse.redirect(new URL('/login', request.url));
       }
     } catch (error) {
@@ -75,7 +81,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url));
       }
 
-      if (user.rol !== 'EVALUADOR') {
+      if (user.rol !== Rol.EVALUADOR) {
         return NextResponse.redirect(new URL('/login', request.url));
       }
     } catch (error) {
@@ -88,6 +94,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
     '/login',
     '/admin-dashboard',
     '/alumnos/:path*',
