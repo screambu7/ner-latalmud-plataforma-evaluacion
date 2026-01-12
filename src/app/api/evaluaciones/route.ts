@@ -1,22 +1,12 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth';
 import { Rol } from '@prisma/client';
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const user = await db.usuario.findUnique({
-      where: { id: parseInt(userId) },
-    });
-
-    if (!user || user.estado !== 'ACTIVO') {
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
@@ -52,18 +42,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const user = await db.usuario.findUnique({
-      where: { id: parseInt(userId) },
-    });
-
-    if (!user || user.estado !== 'ACTIVO') {
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
@@ -116,9 +96,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validar que el alumno existe
+    // Validar que el alumno existe y obtener datos completos para scoping
     const alumno = await db.alumno.findUnique({
       where: { id: alumnoId },
+      include: {
+        escuela: {
+          select: {
+            id: true,
+            nombre: true,
+          },
+        },
+      },
     });
 
     if (!alumno) {
@@ -126,6 +114,40 @@ export async function POST(request: Request) {
         { error: 'Alumno no encontrado' },
         { status: 404 }
       );
+    }
+
+    // Scoping: Evaluadores solo pueden crear evaluaciones para alumnos de su escuela
+    // o alumnos independientes si el evaluador no tiene escuela asignada
+    // SUPER_ADMIN puede crear evaluaciones para cualquier alumno
+    if (user.rol === Rol.EVALUADOR) {
+      // Obtener escuela del evaluador
+      const evaluador = await db.usuario.findUnique({
+        where: { id: user.id },
+        select: {
+          escuelaId: true,
+        },
+      });
+
+      const evaluadorEscuelaId = evaluador?.escuelaId;
+
+      // Si el alumno tiene escuela, debe coincidir con la del evaluador
+      if (alumno.escuelaId) {
+        if (alumno.escuelaId !== evaluadorEscuelaId) {
+          return NextResponse.json(
+            { error: 'No autorizado: solo puedes crear evaluaciones para alumnos de tu escuela' },
+            { status: 403 }
+          );
+        }
+      } else {
+        // Alumno independiente: solo permitir si el evaluador tampoco tiene escuela
+        // (evaluadores sin escuela pueden evaluar alumnos independientes)
+        if (evaluadorEscuelaId !== null) {
+          return NextResponse.json(
+            { error: 'No autorizado: solo puedes crear evaluaciones para alumnos de tu escuela' },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     // Validar detalles

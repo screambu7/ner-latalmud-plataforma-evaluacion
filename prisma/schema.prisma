@@ -15,6 +15,7 @@ model Usuario {
   id            Int          @id @default(autoincrement())
   nombre        String
   correo        String       @unique
+  passwordHash  String?      // Hash de contraseña (opcional para compatibilidad con usuarios existentes)
   celular       String?
   rol           Rol
   estado        EstadoCuenta
@@ -118,6 +119,19 @@ model Archivo {
   subidoPor      Usuario     @relation("SubidoPor", fields: [subidoPorId], references: [id], onDelete: Restrict)
   creadoEn       DateTime    @default(now())
   actualizadoEn  DateTime    @default(now()) @updatedAt
+}
+
+model LoginToken {
+  id           Int       @id @default(autoincrement())
+  email        String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+  ip           String?
+  userAgent    String?
+  @@index([email])
+  @@index([expiresAt])
 }
 
 enum Rol {

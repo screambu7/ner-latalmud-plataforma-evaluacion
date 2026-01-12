@@ -7,15 +7,17 @@ export default function LoginPage() {
   const [correo, setCorreo] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setLinkSent(false);
 
     try {
-      const response = await fetch('/api/auth', {
+      const response = await fetch('/api/auth/request-link', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -26,13 +28,14 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Error al iniciar sesión');
+        setError(data.error || 'Error al solicitar link de acceso');
         setLoading(false);
         return;
       }
 
-      router.push(data.redirectUrl || '/evaluador-dashboard');
-      router.refresh();
+      // Mostrar mensaje de éxito
+      setLinkSent(true);
+      setLoading(false);
     } catch (err) {
       setError('Error de conexión. Por favor, intenta nuevamente.');
       setLoading(false);
@@ -105,6 +108,30 @@ export default function LoginPage() {
               />
             </div>
 
+            {linkSent && (
+              <div className="rounded-lg bg-green-50 border border-green-100 p-3">
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="h-5 w-5 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  <p className="text-sm font-medium text-green-700">
+                    Si el correo existe en nuestro sistema, recibirás un link de acceso en breve.
+                    {process.env.NODE_ENV === 'development' && ' (Revisa la consola del servidor para el link)'}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="rounded-lg bg-red-50 border border-red-100 p-3">
                 <div className="flex items-center gap-2">
@@ -152,13 +179,36 @@ export default function LoginPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Iniciando sesión...
+                  Enviando link...
                 </span>
               ) : (
-                'Iniciar Sesión'
+                'Enviar Link de Acceso'
               )}
             </button>
           </form>
+
+          {/* Links adicionales */}
+          <div className="mt-6 space-y-3">
+            <div className="text-center">
+              <a
+                href="/forgot-password"
+                className="text-sm text-primary hover:underline font-medium"
+              >
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+            <div className="border-t border-neutral-100 pt-4">
+              <p className="text-center text-xs text-slate-500 mb-3">
+                ¿No tienes una cuenta?
+              </p>
+              <a
+                href="/signup"
+                className="block w-full text-center rounded-lg border-2 border-primary px-4 py-2 text-primary font-semibold hover:bg-primary/5 active:scale-[0.98] transition-all"
+              >
+                Crear cuenta
+              </a>
+            </div>
+          </div>
 
           {/* Footer del card */}
           <div className="mt-6 border-t border-neutral-100 pt-6">
