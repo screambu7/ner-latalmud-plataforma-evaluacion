@@ -1,10 +1,23 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { db } from './lib/db';
 import { Rol } from '@prisma/client';
+import { verifySessionJWT } from './lib/jwt';
 
+/**
+ * Middleware stateless que verifica sesiones JWT sin acceso a DB (PR1).
+ * 
+ * ⚠️ IMPORTANTE: Este middleware NO usa Prisma/DB para ser compatible con Edge Runtime.
+ * Solo verifica el JWT y el rol. La validación completa del estado
+ * del usuario (ACTIVO/INACTIVO) se hace en las rutas API usando getCurrentUser().
+ * 
+ * ⚠️ LIMITACIÓN: Si un usuario es degradado (cambio de rol) o desactivado,
+ * el JWT seguirá siendo válido hasta que expire (7 días). El middleware
+ * no puede detectar estos cambios sin consultar la BD. Las rutas API
+ * sí validan el estado actual usando getCurrentUser().
+ */
 export async function middleware(request: NextRequest) {
-  const userId = request.cookies.get('user_id')?.value;
+  const sessionCookie = request.cookies.get('session')?.value;
+  const session = sessionCookie ? await verifySessionJWT(sessionCookie) : null;
 
   // Redirigir página principal al login
   if (request.nextUrl.pathname === '/') {
@@ -13,22 +26,12 @@ export async function middleware(request: NextRequest) {
 
   // Rutas públicas
   if (request.nextUrl.pathname === '/login') {
-    if (userId) {
+    if (session) {
       // Si ya está logueado, redirigir según rol
-      try {
-        const user = await db.usuario.findUnique({
-          where: { id: parseInt(userId) },
-        });
-
-        if (user && user.estado === 'ACTIVO') {
-          if (user.rol === Rol.SUPER_ADMIN) {
-            return NextResponse.redirect(new URL('/admin-dashboard', request.url));
-          } else if (user.rol === Rol.EVALUADOR) {
-            return NextResponse.redirect(new URL('/evaluador-dashboard', request.url));
-          }
-        }
-      } catch (error) {
-        // Si hay error, permitir acceso a login
+      if (session.rol === Rol.SUPER_ADMIN) {
+        return NextResponse.redirect(new URL('/admin-dashboard', request.url));
+      } else if (session.rol === Rol.EVALUADOR) {
+        return NextResponse.redirect(new URL('/evaluador-dashboard', request.url));
       }
     }
     return NextResponse.next();
@@ -42,23 +45,11 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname.startsWith('/usuarios') ||
       request.nextUrl.pathname.startsWith('/configuracion')) {
     
-    if (!userId) {
+    if (!session) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    try {
-      const user = await db.usuario.findUnique({
-        where: { id: parseInt(userId) },
-      });
-
-      if (!user || user.estado !== 'ACTIVO') {
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-
-      if (user.rol !== Rol.SUPER_ADMIN) {
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-    } catch (error) {
+    if (session.rol !== Rol.SUPER_ADMIN) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
@@ -68,25 +59,18 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname.startsWith('/mis-alumnos') ||
       request.nextUrl.pathname.startsWith('/evaluar')) {
     
-    if (!userId) {
+    if (!session) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    try {
-      const user = await db.usuario.findUnique({
-        where: { id: parseInt(userId) },
-      });
-
-      if (!user || user.estado !== 'ACTIVO') {
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-
-      if (user.rol !== Rol.EVALUADOR) {
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-    } catch (error) {
+    if (session.rol !== Rol.EVALUADOR) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
+  }
+
+  // Permitir acceso a callback de magic link
+  if (request.nextUrl.pathname === '/api/auth/callback') {
+    return NextResponse.next();
   }
 
   return NextResponse.next();
@@ -107,4 +91,7 @@ export const config = {
     '/evaluar/:path*',
   ],
 };
+
+// Forzar Edge Runtime para compatibilidad
+export const runtime = 'edge';
 

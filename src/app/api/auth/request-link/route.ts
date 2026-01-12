@@ -1,16 +1,13 @@
 /**
- * Endpoint de recuperación de contraseña (PR1)
+ * API Route: Request Magic Link (PR1)
  * 
- * CONTRATO:
- * - POST /api/auth/forgot
- * - Body: { correo: string }
- * - Respuesta exitosa (200): { success: true, message: string }
+ * POST /api/auth/request-link
+ * Body: { correo: string }
  * 
- * COMPORTAMIENTO:
- * - Se comporta igual que /api/auth/request-link
- * - No revela si el usuario existe (evita enumeración)
- * - Genera magic link para acceso
+ * Genera un magic link y lo "envía" (por ahora solo loguea en consola).
+ * Siempre retorna éxito para evitar enumeración de usuarios.
  */
+
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { generateToken, hashToken, buildMagicLink, redactEmail } from '@/lib/magic-link';
@@ -73,11 +70,11 @@ export async function POST(request: Request) {
     // "Enviar" link (por ahora solo loguear)
     if (process.env.NODE_ENV === 'development') {
       // En desarrollo: loguear link completo
-      console.log('[FORGOT] Link generado para:', correoNormalizado);
-      console.log('[FORGOT] Link:', magicLink);
+      console.log('[MAGIC-LINK] Link generado para:', correoNormalizado);
+      console.log('[MAGIC-LINK] Link:', magicLink);
     } else {
       // En staging/production: loguear pero redactando email
-      console.log('[FORGOT] Link generado para:', redactEmail(correoNormalizado));
+      console.log('[MAGIC-LINK] Link generado para:', redactEmail(correoNormalizado));
       // TODO: Enviar email real aquí
       // await sendMagicLinkEmail(correoNormalizado, magicLink);
     }
@@ -88,7 +85,7 @@ export async function POST(request: Request) {
       message: 'Si el correo existe en nuestro sistema, recibirás un link de acceso en breve.',
     });
   } catch (error: any) {
-    console.error('[FORGOT] Error al procesar solicitud:', error);
+    console.error('[MAGIC-LINK] Error al procesar solicitud:', error);
     
     // En caso de error, también retornar éxito genérico
     return NextResponse.json({

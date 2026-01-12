@@ -1,22 +1,12 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth';
 import { Rol } from '@prisma/client';
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const user = await db.usuario.findUnique({
-      where: { id: parseInt(userId) },
-    });
-
-    if (!user || user.estado !== 'ACTIVO') {
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
@@ -45,18 +35,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const user = await db.usuario.findUnique({
-      where: { id: parseInt(userId) },
-    });
-
-    if (!user || user.estado !== 'ACTIVO') {
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 

@@ -24,13 +24,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verificar token secreto (opcional pero recomendado)
+    // Verificar token secreto (REQUERIDO)
     const seedToken = request.headers.get('X-Seed-Token');
     const expectedToken = process.env.SEED_SECRET_TOKEN;
     
-    if (expectedToken && seedToken !== expectedToken) {
+    if (!expectedToken) {
       return NextResponse.json(
-        { error: 'Token inválido' },
+        { error: 'SEED_SECRET_TOKEN no está configurado. El endpoint está deshabilitado por seguridad.' },
+        { status: 403 }
+      );
+    }
+    
+    if (!seedToken || seedToken !== expectedToken) {
+      return NextResponse.json(
+        { error: 'Token inválido o faltante' },
         { status: 401 }
       );
     }
@@ -84,7 +91,12 @@ export async function POST(request: Request) {
         });
 
         usuariosCreados.push(usuario);
-        console.log(`  ✅ ${usuario.nombre} (${usuario.correo}) - Rol: ${usuario.rol}`);
+        // No loguear email completo en producción (PII)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`  ✅ ${usuario.nombre} (${usuario.correo}) - Rol: ${usuario.rol}`);
+        } else {
+          console.log(`  ✅ ${usuario.nombre} - Rol: ${usuario.rol}`);
+        }
       }
 
       // Asegurar que todos los correos en SUPER_ADMIN_EMAILS tengan rol SUPER_ADMIN
@@ -98,7 +110,11 @@ export async function POST(request: Request) {
             where: { correo: email },
             data: { rol: Rol.SUPER_ADMIN },
           });
-          console.log(`  🔄 Actualizado ${email} a SUPER_ADMIN`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`  🔄 Actualizado ${email} a SUPER_ADMIN`);
+          } else {
+            console.log(`  🔄 Actualizado usuario a SUPER_ADMIN`);
+          }
         } else if (!usuario) {
           // Si no existe, crear con rol SUPER_ADMIN
           await prisma.usuario.create({
@@ -109,7 +125,11 @@ export async function POST(request: Request) {
               estado: 'ACTIVO',
             },
           });
-          console.log(`  ✅ Creado ${email} como SUPER_ADMIN`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`  ✅ Creado ${email} como SUPER_ADMIN`);
+          } else {
+            console.log(`  ✅ Creado usuario como SUPER_ADMIN`);
+          }
         }
       }
 

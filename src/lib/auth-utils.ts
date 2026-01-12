@@ -1,18 +1,37 @@
 import { cookies } from 'next/headers';
+import { signSessionJWT } from './jwt';
+import { Rol } from '@prisma/client';
 
-export async function setUserIdCookie(userId: number) {
+/**
+ * Establece una cookie de sesión JWT (PR1)
+ * 
+ * @param userId - ID del usuario
+ * @param rol - Rol del usuario
+ * @param escuelaId - ID de la escuela (opcional)
+ */
+export async function setSessionCookie(
+  userId: number,
+  rol: Rol,
+  escuelaId?: number | null
+) {
   const cookieStore = await cookies();
-  cookieStore.set('user_id', userId.toString(), {
+  const sessionToken = await signSessionJWT(userId, rol, escuelaId);
+  
+  cookieStore.set('session', sessionToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
+    path: '/',
     maxAge: 60 * 60 * 24 * 7, // 7 días
   });
 }
 
-export async function clearUserIdCookie() {
+/**
+ * Borra la cookie de sesión
+ */
+export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete('user_id');
+  cookieStore.delete('session');
 }
 
 

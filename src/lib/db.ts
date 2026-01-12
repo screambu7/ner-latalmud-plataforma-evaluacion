@@ -40,5 +40,39 @@ function shouldUseMock(): boolean {
 
 const useMock = shouldUseMock();
 
-export const db = useMock ? (mockDb as any) : new PrismaClient();
+/**
+ * Singleton global de PrismaClient para evitar múltiples conexiones.
+ * 
+ * En entornos serverless (Vercel, AWS Lambda), cada invocación puede crear
+ * una nueva instancia. Este singleton asegura que reutilizamos la misma
+ * instancia cuando es posible, reduciendo el riesgo de agotar conexiones.
+ * 
+ * ⚠️ IMPORTANTE: En desarrollo con hot-reload, puede haber múltiples instancias.
+ * Esto es aceptable en desarrollo, pero en producción debe ser singleton.
+ */
+let prismaClient: PrismaClient | null = null;
+
+function getPrismaClient(): PrismaClient {
+  if (useMock) {
+    return mockDb as any;
+  }
+
+  // Singleton pattern para PrismaClient
+  if (!prismaClient) {
+    prismaClient = new PrismaClient({
+      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    });
+
+    // Manejar desconexión graceful en shutdown
+    if (typeof process !== 'undefined') {
+      process.on('beforeExit', async () => {
+        await prismaClient?.$disconnect();
+      });
+    }
+  }
+
+  return prismaClient;
+}
+
+export const db = getPrismaClient();
 
