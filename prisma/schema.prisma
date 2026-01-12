@@ -7,34 +7,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// MODELOS PRINCIPALES
+// ============================================
+
 model Usuario {
-  id        Int      @id @default(autoincrement())
-  nombre    String
-  correo    String   @unique
-  celular   String?
-  rol       Rol
-  estado    EstadoCuenta
-  escuelaId Int?
-  creadoEn  DateTime @default(now())
+  id            Int          @id @default(autoincrement())
+  nombre        String
+  correo        String       @unique
+  celular       String?
+  rol           Rol
+  estado        EstadoCuenta
+  escuelaId     Int?
+  escuela       Escuela?     @relation(fields: [escuelaId], references: [id], onDelete: SetNull)
+  creadoEn      DateTime     @default(now())
+  actualizadoEn DateTime     @default(now()) @updatedAt
+
+  // Relaciones
+  evaluacionesCreadas Evaluacion[] @relation("Evaluador")
+  reportesGenerados   Reporte[]    @relation("GeneradoPor")
+  archivosSubidos     Archivo[]    @relation("SubidoPor")
+}
+
+model Escuela {
+  id            Int          @id @default(autoincrement())
+  nombre        String
+  direccion     String?
+  telefono      String?
+  correo        String?
+  estado        EstadoCuenta @default(ACTIVO)
+  creadoEn      DateTime     @default(now())
+  actualizadoEn DateTime     @default(now()) @updatedAt
+
+  // Relaciones
+  usuarios Usuario[]
+  alumnos  Alumno[]
 }
 
 model Alumno {
-  id        Int      @id @default(autoincrement())
-  nombre    String
-  correo    String?
-  tipo      TipoAlumno
-  escuelaId Int?
-  status    StatusAlumno
-  creadoEn  DateTime @default(now())
+  id            Int          @id @default(autoincrement())
+  nombre        String
+  correo        String?
+  tipo          TipoAlumno
+  escuelaId     Int?
+  escuela       Escuela?     @relation(fields: [escuelaId], references: [id], onDelete: SetNull)
+  status        StatusAlumno
+  creadoEn      DateTime     @default(now())
+  actualizadoEn DateTime     @default(now()) @updatedAt
+
+  // Relaciones
+  evaluaciones Evaluacion[]
+  reportes     Reporte[]
 }
 
 model Evaluacion {
-  id               Int                 @id @default(autoincrement())
-  alumnoId         Int
-  evaluadorId      Int
-  tipo             TipoDiagnostico
-  fecha            DateTime
-  EvaluacionDetalle EvaluacionDetalle[]
+  id            Int             @id @default(autoincrement())
+  alumnoId      Int
+  alumno        Alumno          @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  evaluadorId   Int
+  evaluador     Usuario         @relation("Evaluador", fields: [evaluadorId], references: [id], onDelete: Restrict)
+  tipo          TipoDiagnostico
+  fecha         DateTime        @default(now())
+  creadoEn      DateTime        @default(now())
+  actualizadoEn DateTime        @default(now()) @updatedAt
+
+  // Relaciones
+  detalles EvaluacionDetalle[]
+  reportes Reporte[]
 }
 
 model EvaluacionDetalle {
@@ -43,11 +82,46 @@ model EvaluacionDetalle {
   evaluacion   Evaluacion @relation(fields: [evaluacionId], references: [id], onDelete: Cascade)
   subhabilidad String
   nivel        Int
+  creadoEn     DateTime   @default(now())
+}
+
+model Reporte {
+  id            Int         @id @default(autoincrement())
+  tipo          TipoReporte
+  evaluacionId  Int?
+  evaluacion    Evaluacion? @relation(fields: [evaluacionId], references: [id], onDelete: SetNull)
+  alumnoId      Int?
+  alumno        Alumno?     @relation(fields: [alumnoId], references: [id], onDelete: SetNull)
+  generadoPorId Int
+  generadoPor   Usuario     @relation("GeneradoPor", fields: [generadoPorId], references: [id], onDelete: Restrict)
+  contenido     Json? // Datos estructurados del reporte
+  fechaInicio   DateTime?
+  fechaFin      DateTime?
+  creadoEn      DateTime    @default(now())
+  actualizadoEn DateTime    @default(now()) @updatedAt
+
+  // Relaciones
+  archivos Archivo[]
+}
+
+model Archivo {
+  id             Int         @id @default(autoincrement())
+  nombre         String
+  nombreOriginal String
+  tipo           TipoArchivo
+  mimeType       String
+  tamaño        Int // en bytes
+  ruta           String // ruta de almacenamiento
+  reporteId      Int?
+  reporte        Reporte?    @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+  subidoPorId    Int
+  subidoPor      Usuario     @relation("SubidoPor", fields: [subidoPorId], references: [id], onDelete: Restrict)
+  creadoEn       DateTime    @default(now())
+  actualizadoEn  DateTime    @default(now()) @updatedAt
 }
 
 enum Rol {
-  ADMIN_PRINCIPAL
-  ADMIN_GENERAL
+  SUPER_ADMIN
   EVALUADOR
 }
 
@@ -87,3 +161,19 @@ enum TipoDiagnostico {
   GN_HA_DIFICIL_SN
 }
 
+enum TipoReporte {
+  EVALUACION_INDIVIDUAL
+  EVALUACION_GRUPAL
+  PROGRESO_ALUMNO
+  ESTADISTICAS_ESCUELA
+  REPORTE_GENERAL
+}
+
+enum TipoArchivo {
+  PDF_REPORTE
+  PDF_EVALUACION
+  EXCEL_DATOS
+  IMAGEN
+  DOCUMENTO
+  OTRO
+}
