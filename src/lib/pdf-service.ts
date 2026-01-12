@@ -14,9 +14,14 @@ import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import type { ReporteProgresoData } from './types/evaluador-dtos';
 
-// Import dinámico de Playwright para evitar errores en build si no está disponible
-// En Vercel, Playwright se instala automáticamente durante el build
-type Browser = any; // Tipo para evitar errores de TypeScript
+// Playwright se carga dinámicamente en runtime
+// Configurado como serverExternalPackages en next.config.ts
+type Browser = any;
+type PlaywrightModule = {
+  chromium: {
+    launch: (options?: any) => Promise<Browser>;
+  };
+};
 
 // ============================================
 // CONFIGURACIÓN
@@ -87,7 +92,12 @@ export async function generarPDFReporte(
   try {
     // Import dinámico de Playwright (solo se carga cuando se ejecuta la función)
     // En Vercel, Playwright se instala automáticamente durante el build
-    const { chromium } = await import('playwright');
+    // Usar string literal para evitar análisis estático de TypeScript
+    // serverExternalPackages en next.config.ts asegura que no se bundlee
+    const playwrightModuleName = 'playwright';
+    // @ts-ignore - Playwright es external package, TypeScript no puede resolverlo en build time
+    const playwrightModule = await import(playwrightModuleName) as PlaywrightModule;
+    const { chromium } = playwrightModule;
     
     // Asegurar que el directorio de storage existe
     await mkdir(PDF_STORAGE_DIR, { recursive: true });
