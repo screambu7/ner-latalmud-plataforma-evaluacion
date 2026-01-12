@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
+import { Rol } from '@prisma/client';
 
 export async function GET(
   request: Request,
@@ -23,8 +24,8 @@ export async function GET(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Solo admin puede ver detalles
-    if (user.rol !== 'ADMIN_PRINCIPAL' && user.rol !== 'ADMIN_GENERAL') {
+    // Solo SUPER_ADMIN puede ver detalles
+    if (user.rol !== Rol.SUPER_ADMIN) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
@@ -66,8 +67,8 @@ export async function PUT(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Solo admin puede actualizar alumnos
-    if (user.rol !== 'ADMIN_PRINCIPAL' && user.rol !== 'ADMIN_GENERAL') {
+    // Solo SUPER_ADMIN puede actualizar alumnos
+    if (user.rol !== Rol.SUPER_ADMIN) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
@@ -140,8 +141,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Solo admin puede dar de baja alumnos
-    if (user.rol !== 'ADMIN_PRINCIPAL' && user.rol !== 'ADMIN_GENERAL') {
+    // Solo SUPER_ADMIN puede dar de baja alumnos
+    if (user.rol !== Rol.SUPER_ADMIN) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 

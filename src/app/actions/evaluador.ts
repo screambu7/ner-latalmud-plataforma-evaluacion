@@ -134,12 +134,12 @@ export async function getEvaluadorDashboard(): Promise<
 
     // Transformar a formato puro
     const evaluacionesPuras = transformarEvaluacionesPrisma(
-      evaluaciones.map((e) => ({
+      evaluaciones.map((e: (typeof evaluaciones)[0]) => ({
         id: e.id,
         alumnoId: e.alumnoId,
         tipo: e.tipo,
         fecha: e.fecha,
-        detalles: e.EvaluacionDetalle.map((d) => ({
+        detalles: e.EvaluacionDetalle.map((d: (typeof e.EvaluacionDetalle)[0]) => ({
           subhabilidad: d.subhabilidad,
           nivel: d.nivel,
         })),
@@ -361,12 +361,12 @@ export async function getPerfilDiagnostico(
 
     // Transformar a formato puro
     const evaluacionesPuras = transformarEvaluacionesPrisma(
-      evaluaciones.map((e) => ({
+      evaluaciones.map((e: (typeof evaluaciones)[0]) => ({
         id: e.id,
         alumnoId: e.alumnoId,
         tipo: e.tipo,
         fecha: e.fecha,
-        detalles: e.EvaluacionDetalle.map((d) => ({
+        detalles: e.EvaluacionDetalle.map((d: (typeof e.EvaluacionDetalle)[0]) => ({
           subhabilidad: d.subhabilidad,
           nivel: d.nivel,
         })),
@@ -594,12 +594,12 @@ export async function getReporteProgreso(
 
     // Transformar a formato puro
     const evaluacionesPuras = transformarEvaluacionesPrisma(
-      evaluaciones.map((e) => ({
+      evaluaciones.map((e: (typeof evaluaciones)[0]) => ({
         id: e.id,
         alumnoId: e.alumnoId,
         tipo: e.tipo,
         fecha: e.fecha,
-        detalles: e.EvaluacionDetalle.map((d) => ({
+        detalles: e.EvaluacionDetalle.map((d: (typeof e.EvaluacionDetalle)[0]) => ({
           subhabilidad: d.subhabilidad,
           nivel: d.nivel,
         })),
@@ -919,7 +919,7 @@ export async function getDatosEvaluacionActiva(
 ): Promise<
   ActionResult<{
     alumno: {
-      id: number;
+      id: string; // String para compatibilidad con EvaluacionActivaData
       nombre: string;
       avatarUrl: string;
       grupo: string;
@@ -961,7 +961,7 @@ export async function getDatosEvaluacionActiva(
       success: true,
       data: {
         alumno: {
-          id: alumno.id,
+          id: alumno.id.toString(), // Convertir number a string para compatibilidad con tipos
           nombre: alumno.nombre,
           avatarUrl: '', // TODO: Agregar avatar si es necesario
           grupo: alumno.escuela?.nombre || 'Sin grupo',

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
+import { Rol } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -19,13 +20,13 @@ export async function GET() {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Admin y evaluadores pueden ver alumnos
-    if (user.rol !== 'ADMIN_PRINCIPAL' && user.rol !== 'ADMIN_GENERAL' && user.rol !== 'EVALUADOR') {
+    // SUPER_ADMIN y evaluadores pueden ver alumnos
+    if (user.rol !== Rol.SUPER_ADMIN && user.rol !== Rol.EVALUADOR) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     // Evaluadores solo ven alumnos activos
-    const whereClause = user.rol === 'EVALUADOR' 
+    const whereClause = user.rol === Rol.EVALUADOR 
       ? { status: 'ACTIVO' }
       : {};
 
@@ -59,8 +60,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Solo admin puede crear alumnos
-    if (user.rol !== 'ADMIN_PRINCIPAL' && user.rol !== 'ADMIN_GENERAL') {
+    // Solo SUPER_ADMIN puede crear alumnos
+    if (user.rol !== Rol.SUPER_ADMIN) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 

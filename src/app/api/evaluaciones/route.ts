@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
+import { Rol } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -19,9 +20,9 @@ export async function GET() {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Evaluadores solo ven sus propias evaluaciones, admins ven todas
+    // Evaluadores solo ven sus propias evaluaciones, SUPER_ADMIN ve todas
     let evaluaciones;
-    if (user.rol === 'EVALUADOR') {
+    if (user.rol === Rol.EVALUADOR) {
       evaluaciones = await db.evaluacion.findMany({
         where: { evaluadorId: user.id },
         include: {
@@ -29,7 +30,7 @@ export async function GET() {
         },
         orderBy: { fecha: 'desc' },
       });
-    } else if (user.rol === 'ADMIN_PRINCIPAL' || user.rol === 'ADMIN_GENERAL') {
+    } else if (user.rol === Rol.SUPER_ADMIN) {
       evaluaciones = await db.evaluacion.findMany({
         include: {
           EvaluacionDetalle: true,
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
     }
 
     // Solo evaluadores pueden crear evaluaciones
-    if (user.rol !== 'EVALUADOR') {
+    if (user.rol !== Rol.EVALUADOR) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
