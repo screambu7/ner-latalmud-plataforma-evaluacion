@@ -1,10 +1,15 @@
 # PR1: Autenticación con Magic Link + Sesión JWT
 
+> **⚠️ ESTADO FINAL**: Este documento describe la implementación final de PR1 después del hardening de producción.
+> Ver `SECURITY_FINAL.md` para el estado actualizado del sistema.
+
 Este documento describe la implementación de PR1: Autenticación real con Magic Link y sesión segura con JWT.
 
 ## 📋 Resumen
 
 PR1 reemplaza el sistema de autenticación anterior (email-only con auto-creación sin verificación) por un sistema seguro basado en:
+
+**⚠️ IMPORTANTE**: Email-only login NO está permitido. El endpoint `/api/auth` está deprecado y retorna 410 Gone.
 
 1. **Magic Links**: Links temporales enviados por email (o logueados en consola durante desarrollo)
 2. **JWT firmado**: Tokens JWT en cookies httpOnly para sesiones

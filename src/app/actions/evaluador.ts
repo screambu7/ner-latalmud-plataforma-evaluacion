@@ -119,7 +119,7 @@ export async function getEvaluadorDashboard(): Promise<
         evaluadorId: user.id,
       },
       include: {
-        EvaluacionDetalle: true,
+        detalles: true,
         alumno: {
           select: {
             id: true,
@@ -139,7 +139,7 @@ export async function getEvaluadorDashboard(): Promise<
         alumnoId: e.alumnoId,
         tipo: e.tipo,
         fecha: e.fecha,
-        detalles: e.EvaluacionDetalle.map((d: (typeof e.EvaluacionDetalle)[0]) => ({
+        detalles: e.detalles.map((d: (typeof e.detalles)[0]) => ({
           subhabilidad: d.subhabilidad,
           nivel: d.nivel,
         })),
@@ -352,7 +352,7 @@ export async function getPerfilDiagnostico(
         alumnoId: alumnoId,
       },
       include: {
-        EvaluacionDetalle: true,
+        detalles: true,
       },
       orderBy: {
         fecha: 'desc',
@@ -366,7 +366,7 @@ export async function getPerfilDiagnostico(
         alumnoId: e.alumnoId,
         tipo: e.tipo,
         fecha: e.fecha,
-        detalles: e.EvaluacionDetalle.map((d: (typeof e.EvaluacionDetalle)[0]) => ({
+        detalles: e.detalles.map((d: (typeof e.detalles)[0]) => ({
           subhabilidad: d.subhabilidad,
           nivel: d.nivel,
         })),
@@ -478,12 +478,12 @@ function generarHistorialEvaluaciones(
     id: number;
     fecha: Date;
     tipo: string;
-    EvaluacionDetalle: Array<{ nivel: number }>;
+    detalles: Array<{ nivel: number }>;
   }>
 ): EvaluacionHistorial[] {
   return evaluaciones.map((evaluacion) => {
     // Calcular promedio de la evaluación
-    const niveles = evaluacion.EvaluacionDetalle.map((d) => d.nivel);
+    const niveles = evaluacion.detalles.map((d) => d.nivel);
     const promedio =
       niveles.length > 0
         ? niveles.reduce((sum, n) => sum + n, 0) / niveles.length
@@ -585,7 +585,7 @@ export async function getReporteProgreso(
         alumnoId: alumnoId,
       },
       include: {
-        EvaluacionDetalle: true,
+        detalles: true,
       },
       orderBy: {
         fecha: 'asc',
@@ -599,7 +599,7 @@ export async function getReporteProgreso(
         alumnoId: e.alumnoId,
         tipo: e.tipo,
         fecha: e.fecha,
-        detalles: e.EvaluacionDetalle.map((d: (typeof e.EvaluacionDetalle)[0]) => ({
+        detalles: e.detalles.map((d: (typeof e.detalles)[0]) => ({
           subhabilidad: d.subhabilidad,
           nivel: d.nivel,
         })),
@@ -676,7 +676,7 @@ export async function getReporteProgreso(
 function calcularProgresoSemestral(
   evaluaciones: Array<{
     fecha: Date;
-    EvaluacionDetalle: Array<{ nivel: number }>;
+    detalles: Array<{ nivel: number }>;
   }>
 ): ProgresoSemestral[] {
   const hoy = new Date();
@@ -700,7 +700,7 @@ function calcularProgresoSemestral(
     let promedioMes = 0;
     if (evaluacionesMes.length > 0) {
       const todosNiveles = evaluacionesMes.flatMap((e) =>
-        e.EvaluacionDetalle.map((d) => d.nivel)
+        e.detalles.map((d) => d.nivel)
       );
       const suma = todosNiveles.reduce((sum, n) => sum + n, 0);
       promedioMes = todosNiveles.length > 0 ? suma / todosNiveles.length : 0;
@@ -880,7 +880,7 @@ export async function guardarEvaluacion(
         evaluadorId: user.id,
         tipo: tipo as any,
         fecha: new Date(),
-        EvaluacionDetalle: {
+        detalles: {
           create: detalles.map((d) => ({
             subhabilidad: d.subhabilidad,
             nivel: d.nivel,

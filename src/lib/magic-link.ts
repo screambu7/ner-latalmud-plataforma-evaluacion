@@ -41,7 +41,21 @@ export function hashToken(token: string): string {
  * @returns URL completa del magic link
  */
 export function buildMagicLink(token: string): string {
-  const baseUrl = process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  // Validar APP_BASE_URL (fail fast en staging/production)
+  const baseUrl = process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  
+  if (!baseUrl) {
+    if (process.env.NODE_ENV === 'development') {
+      return `http://localhost:3000/api/auth/callback?token=${token}`;
+    }
+    
+    // En staging/production, fallar explícitamente
+    throw new Error(
+      'APP_BASE_URL o NEXT_PUBLIC_APP_URL es REQUERIDO en staging/production pero no está configurado. ' +
+      'Configura APP_BASE_URL en las variables de entorno.'
+    );
+  }
+  
   return `${baseUrl}/api/auth/callback?token=${token}`;
 }
 

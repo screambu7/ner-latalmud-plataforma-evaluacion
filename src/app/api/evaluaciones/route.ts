@@ -16,14 +16,14 @@ export async function GET() {
       evaluaciones = await db.evaluacion.findMany({
         where: { evaluadorId: user.id },
         include: {
-          EvaluacionDetalle: true,
+          detalles: true,
         },
         orderBy: { fecha: 'desc' },
       });
     } else if (user.rol === Rol.SUPER_ADMIN) {
       evaluaciones = await db.evaluacion.findMany({
         include: {
-          EvaluacionDetalle: true,
+          detalles: true,
         },
         orderBy: { fecha: 'desc' },
       });
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
         evaluadorId: user.id,
         tipo: tipo as any,
         fecha: new Date(),
-        EvaluacionDetalle: {
+        detalles: {
           create: detalles.map((d: any) => ({
             subhabilidad: d.subhabilidad,
             nivel: d.nivel,
@@ -192,7 +192,7 @@ export async function POST(request: Request) {
         },
       },
       include: {
-        EvaluacionDetalle: true,
+        detalles: true,
       },
     });
 

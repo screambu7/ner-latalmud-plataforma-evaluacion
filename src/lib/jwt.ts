@@ -24,8 +24,8 @@ function getJWTSecret(): string {
     
     // En staging/production, fallar explícitamente
     throw new Error(
-      'JWT_SECRET no está configurado. ' +
-      'Configura JWT_SECRET en las variables de entorno de staging/production. ' +
+      'JWT_SECRET es REQUERIDO en staging/production pero no está configurado. ' +
+      'Configura JWT_SECRET en las variables de entorno. ' +
       'Debe ser una cadena aleatoria de al menos 32 caracteres.'
     );
   }
@@ -90,11 +90,15 @@ export async function signSessionJWT(
   const expiresInSeconds = parseExpiration(JWT_EXPIRES_IN);
   const now = Math.floor(Date.now() / 1000);
 
-  const token = await new SignJWT({
-    sub: userId,
+  const payload: any = {
+    sub: userId.toString(), // jose requiere sub como string
     rol,
-    ...(escuelaId !== undefined && escuelaId !== null && { escuelaId }),
-  })
+  };
+  if (escuelaId !== undefined && escuelaId !== null) {
+    payload.escuelaId = escuelaId;
+  }
+  
+  const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt(now)
     .setExpirationTime(now + expiresInSeconds)
@@ -120,8 +124,9 @@ export async function verifySessionJWT(
     });
 
     // Validar estructura del payload
+    // jose devuelve sub como string, pero lo convertimos a number
     if (
-      typeof payload.sub !== 'number' ||
+      !payload.sub ||
       !payload.rol ||
       typeof payload.iat !== 'number' ||
       typeof payload.exp !== 'number'
@@ -129,8 +134,13 @@ export async function verifySessionJWT(
       return null;
     }
 
+    const userId = parseInt(payload.sub as string, 10);
+    if (isNaN(userId)) {
+      return null;
+    }
+
     return {
-      sub: payload.sub as number,
+      sub: userId,
       rol: payload.rol as Rol,
       escuelaId: payload.escuelaId as number | null | undefined,
       iat: payload.iat as number,
