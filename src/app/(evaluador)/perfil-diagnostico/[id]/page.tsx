@@ -96,7 +96,7 @@ export default async function PerfilDiagnosticoPage({ params }: PageProps) {
       {/* Student Profile Header */}
       <div className="flex flex-col items-center pt-8 pb-6 px-4">
         <div className="relative mb-4 group cursor-pointer">
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary to-blue-300 opacity-70 blur-sm"></div>
+          <div className="absolute -inset-1 rounded-full bg-linear-to-tr from-primary to-blue-300 opacity-70 blur-sm"></div>
           <div
             className="relative bg-center bg-no-repeat bg-cover rounded-full h-28 w-28 border-4 border-paper shadow-sm"
             style={{ backgroundImage: `url("${data.alumno.avatarUrl}")` }}
@@ -131,7 +131,7 @@ export default async function PerfilDiagnosticoPage({ params }: PageProps) {
           </div>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-paper border border-neutral-100 flex flex-col items-center justify-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-3xl"></div>
+          <div className="absolute top-0 right-0 w-16 h-16 bg-linear-to-bl from-primary/5 to-transparent rounded-bl-3xl"></div>
           <div className="relative w-72 h-72 my-2">
             <svg className="w-full h-full drop-shadow-sm" viewBox="0 0 200 200">
               <g className="stroke-neutral-200 stroke-1 fill-none">
