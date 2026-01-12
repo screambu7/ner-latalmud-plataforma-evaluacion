@@ -11,17 +11,17 @@ async function main() {
     {
       correo: '[REDACTED_EMAIL_1]',
       nombre: 'Teddy',
-      rol: 'SUPER_ADMIN' as Rol,
+      rol: Rol.SUPER_ADMIN,
     },
     {
       correo: '[REDACTED_EMAIL_2]',
       nombre: 'Moshe',
-      rol: 'SUPER_ADMIN' as Rol,
+      rol: Rol.SUPER_ADMIN,
     },
     {
       correo: '[REDACTED_EMAIL_3]',
       nombre: 'Evaluador Test',
-      rol: 'EVALUADOR' as Rol,
+      rol: Rol.EVALUADOR,
     },
   ];
 
@@ -30,14 +30,14 @@ async function main() {
   for (const usuarioData of usuariosSeed) {
     // Determinar rol: si el correo está en SUPER_ADMIN_EMAILS, forzar SUPER_ADMIN
     const rolFinal = isSuperAdminEmail(usuarioData.correo)
-      ? 'SUPER_ADMIN'
+      ? Rol.SUPER_ADMIN
       : usuarioData.rol;
 
     const usuario = await prisma.usuario.upsert({
       where: { correo: usuarioData.correo },
       update: {
         // Actualizar rol si el correo está en la lista de super admins
-        rol: isSuperAdminEmail(usuarioData.correo) ? 'SUPER_ADMIN' : undefined,
+        rol: isSuperAdminEmail(usuarioData.correo) ? Rol.SUPER_ADMIN : undefined,
         nombre: usuarioData.nombre,
         estado: 'ACTIVO',
       },
@@ -59,10 +59,10 @@ async function main() {
       where: { correo: email },
     });
 
-    if (usuario && usuario.rol !== 'SUPER_ADMIN') {
+    if (usuario && usuario.rol !== Rol.SUPER_ADMIN) {
       await prisma.usuario.update({
         where: { correo: email },
-        data: { rol: 'SUPER_ADMIN' },
+        data: { rol: Rol.SUPER_ADMIN },
       });
       console.log(`  🔄 Actualizado ${email} a SUPER_ADMIN`);
     } else if (!usuario) {
@@ -71,7 +71,7 @@ async function main() {
         data: {
           correo: email,
           nombre: email.split('@')[0], // Usar parte antes del @ como nombre
-          rol: 'SUPER_ADMIN',
+          rol: Rol.SUPER_ADMIN,
           estado: 'ACTIVO',
         },
       });
