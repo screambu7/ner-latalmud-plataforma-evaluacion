@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { SUBHABILIDADES, type Nivel } from '@/lib/rubricas';
+import { getSubhabilidadesPorTipo, type Nivel, type TipoDiagnostico } from '@/lib/rubricas';
+import { guardarEvaluacion } from '@/app/actions/evaluador';
 
 interface Alumno {
   id: number;
@@ -12,23 +13,7 @@ interface Alumno {
   status: 'ACTIVO' | 'EN_PAUSA' | 'NO_ACTIVO' | 'NIVEL_LOGRADO';
 }
 
-type TipoDiagnostico =
-  | 'GV_EXP_DEF_FACIL'
-  | 'GV_EXP_FACIL'
-  | 'GV_HA_FACIL_NK'
-  | 'GV_HA_FACIL_SN'
-  | 'GN_EXP_DEF_FACIL'
-  | 'GN_EXP_FACIL'
-  | 'GN_HA_FACIL_NK'
-  | 'GN_HA_FACIL_SN'
-  | 'GV_EXP_DEF_DIFICIL'
-  | 'GV_EXP_DIFICIL'
-  | 'GV_HA_DIFICIL_NK'
-  | 'GV_HA_DIFICIL_SN'
-  | 'GN_EXP_DEF_DIFICIL'
-  | 'GN_EXP_DIFICIL'
-  | 'GN_HA_DIFICIL_NK'
-  | 'GN_HA_DIFICIL_SN';
+// Tipo importado desde rubricas.ts para mantener consistencia
 
 export default function EvaluarPage() {
   const router = useRouter();
@@ -62,7 +47,7 @@ export default function EvaluarPage() {
 
   // Obtener subhabilidades que aplican al tipo seleccionado
   const subhabilidadesAplicables = tipo
-    ? SUBHABILIDADES.filter((sub) => sub.aplicaATipos.includes(tipo))
+    ? getSubhabilidadesPorTipo(tipo)
     : [];
 
   // Inicializar niveles cuando cambia el tipo
@@ -104,22 +89,14 @@ export default function EvaluarPage() {
     }));
 
     try {
-      const response = await fetch('/api/evaluaciones', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          alumnoId: Number(alumnoId),
-          tipo,
-          detalles,
-        }),
-      });
+      const result = await guardarEvaluacion(
+        Number(alumnoId),
+        tipo,
+        detalles
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Error al guardar evaluación');
+      if (!result.success) {
+        setError(result.error || 'Error al guardar evaluación');
         setSaving(false);
         return;
       }
