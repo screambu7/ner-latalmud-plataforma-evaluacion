@@ -33,7 +33,16 @@ function getJWTSecret(): string {
   return secret;
 }
 
-const JWT_SECRET = getJWTSecret();
+// Lazy evaluation para evitar errores en build time
+let _jwtSecret: string | null = null;
+
+function getJWTSecretLazy(): string {
+  if (_jwtSecret === null) {
+    _jwtSecret = getJWTSecret();
+  }
+  return _jwtSecret;
+}
+
 const JWT_EXPIRES_IN = '7d'; // 7 días por defecto
 
 /**
@@ -86,7 +95,7 @@ export async function signSessionJWT(
   rol: Rol,
   escuelaId?: number | null
 ): Promise<string> {
-  const secret = new TextEncoder().encode(JWT_SECRET);
+  const secret = new TextEncoder().encode(getJWTSecretLazy());
   const expiresInSeconds = parseExpiration(JWT_EXPIRES_IN);
   const now = Math.floor(Date.now() / 1000);
 
@@ -116,7 +125,7 @@ export async function signSessionJWT(
 export async function verifySessionJWT(
   token: string
 ): Promise<SessionJWTPayload | null> {
-  const secret = new TextEncoder().encode(JWT_SECRET);
+  const secret = new TextEncoder().encode(getJWTSecretLazy());
 
   try {
     const { payload } = await jwtVerify(token, secret, {
