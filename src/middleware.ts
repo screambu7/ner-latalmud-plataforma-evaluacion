@@ -109,6 +109,6 @@ export const config = {
   ],
 };
 
-// Forzar Edge Runtime para compatibilidad
-export const runtime = 'edge';
+// Edge Runtime es el default para middleware en Next.js
+// No necesitamos exportarlo explícitamente
 
