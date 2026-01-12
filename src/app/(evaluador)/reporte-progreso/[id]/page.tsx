@@ -89,7 +89,7 @@ export default async function ReporteProgresoPage({ params }: PageProps) {
       {/* Student Profile Header */}
       <div className="flex flex-col items-center pt-6 pb-6 px-4">
         <div className="relative mb-4 group cursor-pointer">
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary to-blue-300 opacity-70 blur-sm group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="absolute -inset-1 rounded-full bg-linear-to-tr from-primary to-blue-300 opacity-70 blur-sm group-hover:opacity-100 transition-opacity duration-300"></div>
           <div
             className="relative bg-center bg-no-repeat bg-cover rounded-full h-28 w-28 border-4 border-paper shadow-sm"
             style={{ backgroundImage: `url("${data.alumno.avatarUrl}")` }}
@@ -210,7 +210,7 @@ export default async function ReporteProgresoPage({ params }: PageProps) {
               <line className="stroke-neutral-100 stroke-1" x1="0" x2="300" y1="10" y2="10"></line>
               {/* Path */}
               <path
-                className="fill-none stroke-primary stroke-[3]"
+                className="fill-none stroke-primary stroke-3"
                 d={`M${30} ${130 - data.progresoSemestral[0].valor} L${80} ${130 - data.progresoSemestral[1].valor} L${130} ${130 - data.progresoSemestral[2].valor} L${180} ${130 - data.progresoSemestral[3].valor} L${230} ${130 - data.progresoSemestral[4].valor} L${280} ${130 - data.progresoSemestral[5].valor}`}
               ></path>
               {/* Area Gradient */}
