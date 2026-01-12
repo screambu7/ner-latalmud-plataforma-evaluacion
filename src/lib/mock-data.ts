@@ -5,7 +5,7 @@ export interface MockUsuario {
   nombre: string;
   correo: string;
   celular?: string;
-  rol: 'ADMIN_PRINCIPAL' | 'ADMIN_GENERAL' | 'EVALUADOR';
+  rol: 'SUPER_ADMIN' | 'EVALUADOR';
   estado: 'ACTIVO' | 'INACTIVO';
   escuelaId?: number;
   creadoEn: Date;
@@ -25,22 +25,30 @@ export interface MockAlumno {
 export const mockUsuarios: MockUsuario[] = [
   {
     id: 1,
-    nombre: 'Admin Principal',
+    nombre: 'Super Admin',
     correo: 'admin@nerlatalmud.com',
-    rol: 'ADMIN_PRINCIPAL',
+    rol: 'SUPER_ADMIN',
     estado: 'ACTIVO',
     creadoEn: new Date(),
   },
   {
     id: 2,
-    nombre: 'Admin General',
-    correo: 'admin2@nerlatalmud.com',
-    rol: 'ADMIN_GENERAL',
+    nombre: 'Teddy',
+    correo: 'teddy@nerlatalmud.com',
+    rol: 'SUPER_ADMIN',
     estado: 'ACTIVO',
     creadoEn: new Date(),
   },
   {
     id: 3,
+    nombre: 'Moshe',
+    correo: 'moshe@nerlatalmud.com',
+    rol: 'SUPER_ADMIN',
+    estado: 'ACTIVO',
+    creadoEn: new Date(),
+  },
+  {
+    id: 4,
     nombre: 'Evaluador Test',
     correo: 'evaluador@nerlatalmud.com',
     rol: 'EVALUADOR',

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { setUserIdCookie } from '@/lib/auth-utils';
+import { Rol } from '@prisma/client';
 
 export async function POST(request: Request) {
   try {
@@ -35,9 +36,9 @@ export async function POST(request: Request) {
     await setUserIdCookie(usuario.id);
 
     let redirectUrl = '/';
-    if (usuario.rol === 'ADMIN_PRINCIPAL' || usuario.rol === 'ADMIN_GENERAL') {
+    if (usuario.rol === Rol.SUPER_ADMIN) {
       redirectUrl = '/admin-dashboard';
-    } else if (usuario.rol === 'EVALUADOR') {
+    } else if (usuario.rol === Rol.EVALUADOR) {
       redirectUrl = '/evaluador-dashboard';
     }
 

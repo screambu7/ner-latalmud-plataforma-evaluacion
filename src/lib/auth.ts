@@ -105,6 +105,6 @@ export async function requireAnyRole(
  */
 export async function hasRole(requiredRole: Rol): Promise<boolean> {
   const user = await getCurrentUser();
-  return user?.rol === requiredRole ?? false;
+  return user?.rol === requiredRole || false;
 }
 

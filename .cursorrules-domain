@@ -1,0 +1,93 @@
+# Reglas de Dominio - Ner LaTalmud
+
+## 🎯 Separación de Responsabilidades
+
+### ❌ PROHIBIDO en Componentes UI
+- Crear lógica de negocio
+- Calcular promedios, estadísticas o métricas
+- Validar reglas de dominio
+- Transformar datos complejos
+- Acceder directamente a Prisma/BD
+
+### ✅ OBLIGATORIO: Ubicación de Lógica
+
+**Toda regla de negocio debe vivir en:**
+- `src/lib/*.ts` - Funciones puras, servicios, utilidades
+- `src/app/actions/*.ts` - Server Actions, lógica de servidor
+
+**Ejemplos:**
+- Cálculos de promedios → `src/lib/calculos.ts`
+- Validaciones de rúbricas → `src/lib/rubricas.ts`
+- Generación de PDFs → `src/lib/pdf-service.ts`
+- Obtención de datos → `src/app/actions/*.ts`
+
+### 📐 Las Rúbricas Mandan sobre la UI
+
+- La UI **consume** las rúbricas, no las define
+- Las rúbricas son la **fuente de verdad**
+- Si la UI necesita algo que no está en rúbricas → **TODO explícito**
+- Nunca hardcodear valores de rúbricas en componentes
+
+### 📝 Documentación de Faltantes
+
+**Si falta información:**
+- Documentar como `// TODO:` con contexto claro
+- No inventar lógica funcional
+- No asumir valores o reglas
+- Indicar qué especificación/documento falta
+
+**Formato de TODO:**
+```typescript
+// TODO: [CONTEXTO] - Requiere ESPECIFICACIÓN_MAESTRA v1.4
+// Falta: [QUÉ FALTA]
+// Bloqueado por: [RAZÓN]
+```
+
+### 🔄 Flujo Correcto
+
+```
+UI Component → Server Action → Lib/Service → Prisma/BD
+     ↓              ↓              ↓
+  Renderiza    Orquesta      Ejecuta lógica
+```
+
+**NUNCA:**
+```
+UI Component → Lógica de negocio → Prisma/BD
+```
+
+### ✅ Ejemplos Correctos
+
+**✅ CORRECTO:**
+```typescript
+// src/app/actions/evaluador.ts
+export async function getReporteProgreso(alumnoId: number) {
+  const evaluaciones = await db.evaluacion.findMany(...);
+  const promedio = calcularPromedioGlobalAlumno(evaluaciones);
+  return { success: true, data: promedio };
+}
+
+// src/app/(evaluador)/reporte-progreso/[id]/page.tsx
+const result = await getReporteProgreso(alumnoId);
+const promedio = result.data;
+```
+
+**❌ INCORRECTO:**
+```typescript
+// src/app/(evaluador)/reporte-progreso/[id]/page.tsx
+const evaluaciones = await db.evaluacion.findMany(...);
+const suma = evaluaciones.reduce(...);
+const promedio = suma / evaluaciones.length; // ❌ Lógica en UI
+```
+
+### 🎯 Principios
+
+1. **UI = Presentación**: Solo renderiza y maneja eventos
+2. **Actions = Orquestación**: Coordina llamadas a servicios
+3. **Lib = Lógica Pura**: Funciones testeables, sin efectos secundarios
+4. **Rúbricas = Fuente de Verdad**: Definiciones canónicas del dominio
+
+---
+
+**Última actualización:** 2025-01-XX  
+**Aplica desde:** Hoy

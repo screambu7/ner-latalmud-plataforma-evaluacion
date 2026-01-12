@@ -1,10 +1,6 @@
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">
-        Diagnóstico Ner Latalmud
-      </h1>
-    </div>
-  );
+  // Redirigir siempre al login desde la página principal
+  redirect('/login');
 }
