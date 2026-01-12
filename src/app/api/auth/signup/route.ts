@@ -68,11 +68,30 @@ export async function POST(request: Request) {
     }
 
     // Verificar si el usuario ya existe
-    const usuarioExistente = await db.usuario.findUnique({
-      where: { correo: correoNormalizado },
-    });
+    console.log('[SIGNUP] Verificando si usuario existe...');
+    let usuarioExistente;
+    try {
+      usuarioExistente = await db.usuario.findUnique({
+        where: { correo: correoNormalizado },
+      });
+    } catch (dbError: any) {
+      console.error('[SIGNUP] Error al verificar usuario existente:', {
+        message: dbError.message,
+        code: dbError.code,
+      });
+      // Si es error de conexión, retornar error específico
+      if (dbError.message?.includes('connect') || dbError.message?.includes('connection') || dbError.code === 'P1001') {
+        return NextResponse.json(
+          { error: 'Error de conexión a la base de datos. Por favor, intenta más tarde.' },
+          { status: 503 }
+        );
+      }
+      // Re-lanzar para que se maneje en el catch general
+      throw dbError;
+    }
 
     if (usuarioExistente) {
+      console.log('[SIGNUP] Usuario ya existe');
       return NextResponse.json(
         { error: 'Este correo electrónico ya está registrado' },
         { status: 409 }
@@ -91,10 +110,12 @@ export async function POST(request: Request) {
     let rol: Rol = Rol.EVALUADOR; // Por defecto
     try {
       if (isSuperAdminEmail(correoNormalizado)) {
+        console.log('[SIGNUP] Email es SUPER_ADMIN');
         rol = Rol.SUPER_ADMIN;
       }
-    } catch (error) {
-      // Continuar con rol por defecto
+    } catch (error: any) {
+      // Si hay error, continuar con rol por defecto
+      console.warn('[SIGNUP] Error al verificar SUPER_ADMIN, usando rol por defecto:', error.message);
     }
 
     // Crear usuario
@@ -131,13 +152,33 @@ export async function POST(request: Request) {
       );
     }
 
-    // Error de conexión a BD
-    if (error.message?.includes('connect') || error.message?.includes('connection')) {
-      console.error('[SIGNUP] Error de conexión a base de datos');
+    // Error de conexión a BD (Prisma error codes)
+    if (
+      error.code === 'P1001' || // Can't reach database server
+      error.code === 'P1000' || // Authentication failed
+      error.code === 'P1002' || // Database server closed the connection
+      error.message?.includes('connect') || 
+      error.message?.includes('connection') ||
+      error.message?.includes('ECONNREFUSED') ||
+      error.message?.includes('timeout')
+    ) {
+      console.error('[SIGNUP] Error de conexión a base de datos:', error.code, error.message);
       return NextResponse.json(
         { error: 'Error de conexión a la base de datos. Por favor, intenta más tarde.' },
         { status: 503 }
       );
+    }
+
+    // Error de Prisma (schema, constraint, etc.)
+    if (error.code?.startsWith('P')) {
+      console.error('[SIGNUP] Error de Prisma:', error.code, error.message);
+      // P2002 ya está manejado arriba
+      if (error.code !== 'P2002') {
+        return NextResponse.json(
+          { error: 'Error al procesar la solicitud en la base de datos.', details: process.env.NODE_ENV === 'development' ? error.message : undefined },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json(
