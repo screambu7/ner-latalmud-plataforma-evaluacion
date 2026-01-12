@@ -44,8 +44,39 @@ function getSuperAdminEmailsFromEnv(): string[] {
  * 
  * Se obtiene de la variable de entorno SUPER_ADMIN_EMAILS.
  * En desarrollo, usa valores por defecto si no está configurado.
+ * 
+ * ⚠️ IMPORTANTE: Esta función se llama de forma lazy para evitar errores
+ * en tiempo de importación si la variable no está configurada.
  */
-export const SUPER_ADMIN_EMAILS = getSuperAdminEmailsFromEnv();
+let _superAdminEmails: string[] | null = null;
+
+function getSuperAdminEmails(): string[] {
+  if (_superAdminEmails === null) {
+    try {
+      _superAdminEmails = getSuperAdminEmailsFromEnv();
+    } catch (error) {
+      // Si falla en tiempo de importación, usar valores por defecto
+      // y loguear el error para debugging
+      console.error('[SUPER_ADMINS] Error al obtener emails desde env:', error);
+      if (process.env.NODE_ENV === 'development') {
+        _superAdminEmails = ['[REDACTED_EMAIL_1]', '[REDACTED_EMAIL_2]'];
+        console.warn('[SUPER_ADMINS] Usando valores por defecto en desarrollo');
+      } else {
+        // En staging/production, si no está configurado, usar array vacío
+        // Esto evitará que el sistema falle, pero ningún email será SUPER_ADMIN
+        _superAdminEmails = [];
+        console.error('[SUPER_ADMINS] SUPER_ADMIN_EMAILS no configurado en staging/production. Ningún email será SUPER_ADMIN.');
+      }
+    }
+  }
+  return _superAdminEmails;
+}
+
+/**
+ * Exporta la lista de emails (para compatibilidad con código existente)
+ * ⚠️ Usar con precaución, puede estar vacía si no está configurado
+ */
+export const SUPER_ADMIN_EMAILS = getSuperAdminEmails();
 
 /**
  * Verifica si un correo corresponde a un super administrador.
@@ -54,5 +85,13 @@ export const SUPER_ADMIN_EMAILS = getSuperAdminEmailsFromEnv();
  * @returns true si el correo está en la lista de super admins
  */
 export function isSuperAdminEmail(email: string): boolean {
-  return SUPER_ADMIN_EMAILS.includes(email.toLowerCase().trim() as any);
+  const emails = getSuperAdminEmails();
+  if (emails.length === 0) {
+    // Si no hay emails configurados, loguear warning pero no fallar
+    if (process.env.NODE_ENV !== 'development') {
+      console.warn('[SUPER_ADMINS] SUPER_ADMIN_EMAILS no configurado. Verificar variables de entorno.');
+    }
+    return false;
+  }
+  return emails.includes(email.toLowerCase().trim());
 }

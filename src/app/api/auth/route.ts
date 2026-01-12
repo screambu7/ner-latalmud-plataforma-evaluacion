@@ -28,6 +28,20 @@ export async function POST(request: Request) {
   const startTime = Date.now();
   console.log('[AUTH] Iniciando proceso de autenticación');
   
+  // Verificar que las dependencias estén disponibles
+  try {
+    // Test de importación de isSuperAdminEmail (lazy)
+    const testEmail = 'test@example.com';
+    isSuperAdminEmail(testEmail);
+    console.log('[AUTH] Dependencias verificadas correctamente');
+  } catch (depError: any) {
+    console.error('[AUTH] Error al verificar dependencias:', {
+      error: depError.message,
+      stack: depError.stack,
+    });
+    // Continuar de todas formas, pero loguear el error
+  }
+  
   try {
     // Validar request body
     let body;
@@ -81,9 +95,17 @@ export async function POST(request: Request) {
         console.log('[AUTH] Usuario no encontrado, creando nuevo usuario...');
         
         // Determinar rol basado en SUPER_ADMIN_EMAILS
-        const rol = isSuperAdminEmail(correoNormalizado)
-          ? Rol.SUPER_ADMIN
-          : Rol.EVALUADOR;
+        let rol = Rol.EVALUADOR; // Por defecto
+        try {
+          if (isSuperAdminEmail(correoNormalizado)) {
+            rol = Rol.SUPER_ADMIN;
+            console.log('[AUTH] Email identificado como SUPER_ADMIN');
+          }
+        } catch (superAdminError) {
+          console.error('[AUTH] Error al verificar SUPER_ADMIN_EMAILS:', superAdminError);
+          // Continuar con rol por defecto (EVALUADOR)
+          console.warn('[AUTH] Usando rol por defecto (EVALUADOR) debido a error en configuración');
+        }
 
         // Extraer nombre del email (parte antes del @)
         const nombre = correoNormalizado.split('@')[0];
