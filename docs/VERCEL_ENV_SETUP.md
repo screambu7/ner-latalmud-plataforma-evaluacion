@@ -83,6 +83,8 @@ vercel env add PDF_STORAGE_DIR preview
 ## ⚠️ IMPORTANTE
 
 - **DATABASE_URL** también debe estar configurada (ya debería estar)
+  - ⚠️ **Si usas Supabase**: Debes usar el Connection Pooler, NO la conexión directa
+  - Ver: `docs/SUPABASE_SETUP.md` para instrucciones detalladas
 - Todas las variables deben estar en **Preview** (staging)
 - Para production, crear las mismas variables pero con valores de production
 - Después de agregar variables, hacer un nuevo deploy para que se apliquen
