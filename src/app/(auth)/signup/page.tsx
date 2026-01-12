@@ -65,7 +65,16 @@ export default function SignUpPage() {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // Si la respuesta no es JSON, usar el texto
+        const text = await response.text();
+        setError(`Error del servidor: ${text || 'Respuesta inválida'}`);
+        setLoading(false);
+        return;
+      }
 
       if (!response.ok) {
         setError(data.error || 'Error al crear la cuenta');
@@ -75,8 +84,9 @@ export default function SignUpPage() {
 
       // Redirigir al login con mensaje de éxito
       router.push('/login?registered=true');
-    } catch (err) {
-      setError('Error de conexión. Por favor, intenta nuevamente.');
+    } catch (err: any) {
+      console.error('[SIGNUP] Error:', err);
+      setError(err.message || 'Error de conexión. Por favor, intenta nuevamente.');
       setLoading(false);
     }
   };

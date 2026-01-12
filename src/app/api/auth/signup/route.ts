@@ -27,9 +27,11 @@ import { isSuperAdminEmail } from '@/config/super-admins';
  *   - 500: Error del servidor
  */
 export async function POST(request: Request) {
+  console.log('[SIGNUP] Iniciando proceso de registro');
   try {
     const body = await request.json();
     const { nombre, correo, password } = body;
+    console.log('[SIGNUP] Datos recibidos:', { nombre, correo: correo ? `${correo.substring(0, 3)}***` : 'undefined', passwordLength: password?.length });
 
     // Validaciones
     if (!nombre || typeof nombre !== 'string' || nombre.trim().length === 0) {
@@ -96,7 +98,8 @@ export async function POST(request: Request) {
     }
 
     // Crear usuario
-    await db.usuario.create({
+    console.log('[SIGNUP] Creando usuario en BD...');
+    const nuevoUsuario = await db.usuario.create({
       data: {
         nombre: nombre.trim(),
         correo: correoNormalizado,
@@ -105,24 +108,40 @@ export async function POST(request: Request) {
         estado: EstadoCuenta.ACTIVO,
       },
     });
+    console.log('[SIGNUP] Usuario creado exitosamente, ID:', nuevoUsuario.id);
 
     return NextResponse.json({
       success: true,
       message: 'Cuenta creada exitosamente',
     });
   } catch (error: any) {
-    console.error('[SIGNUP] Error:', error);
+    console.error('[SIGNUP] Error completo:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+      name: error.name,
+    });
 
     // Error de constraint (email duplicado)
     if (error.code === 'P2002') {
+      console.log('[SIGNUP] Error: Email duplicado');
       return NextResponse.json(
         { error: 'Este correo electrónico ya está registrado' },
         { status: 409 }
       );
     }
 
+    // Error de conexión a BD
+    if (error.message?.includes('connect') || error.message?.includes('connection')) {
+      console.error('[SIGNUP] Error de conexión a base de datos');
+      return NextResponse.json(
+        { error: 'Error de conexión a la base de datos. Por favor, intenta más tarde.' },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Error al crear la cuenta' },
+      { error: 'Error al crear la cuenta', details: process.env.NODE_ENV === 'development' ? error.message : undefined },
       { status: 500 }
     );
   }
