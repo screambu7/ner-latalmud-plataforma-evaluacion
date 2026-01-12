@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  correo    String   @unique
+  celular   String?
+  rol       Rol
+  estado    EstadoCuenta
+  escuelaId Int?
+  creadoEn  DateTime @default(now())
+}
+
+model Alumno {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  correo    String?
+  tipo      TipoAlumno
+  escuelaId Int?
+  status    StatusAlumno
+  creadoEn  DateTime @default(now())
+}
+
+model Evaluacion {
+  id               Int                 @id @default(autoincrement())
+  alumnoId         Int
+  evaluadorId      Int
+  tipo             TipoDiagnostico
+  fecha            DateTime
+  EvaluacionDetalle EvaluacionDetalle[]
+}
+
+model EvaluacionDetalle {
+  id           Int        @id @default(autoincrement())
+  evaluacionId Int
+  evaluacion   Evaluacion @relation(fields: [evaluacionId], references: [id], onDelete: Cascade)
+  subhabilidad String
+  nivel        Int
+}
+
+enum Rol {
+  ADMIN_PRINCIPAL
+  ADMIN_GENERAL
+  EVALUADOR
+}
+
+enum EstadoCuenta {
+  ACTIVO
+  INACTIVO
+}
+
+enum TipoAlumno {
+  ESCUELA
+  INDEPENDIENTE
+}
+
+enum StatusAlumno {
+  ACTIVO
+  EN_PAUSA
+  NO_ACTIVO
+  NIVEL_LOGRADO
+}
+
+enum TipoDiagnostico {
+  GV_EXP_DEF_FACIL
+  GV_EXP_FACIL
+  GV_HA_FACIL_NK
+  GV_HA_FACIL_SN
+  GN_EXP_DEF_FACIL
+  GN_EXP_FACIL
+  GN_HA_FACIL_NK
+  GN_HA_FACIL_SN
+  GV_EXP_DEF_DIFICIL
+  GV_EXP_DIFICIL
+  GV_HA_DIFICIL_NK
+  GV_HA_DIFICIL_SN
+  GN_EXP_DEF_DIFICIL
+  GN_EXP_DIFICIL
+  GN_HA_DIFICIL_NK
+  GN_HA_DIFICIL_SN
+}
+
