@@ -74,24 +74,51 @@ WHERE correo = 'demo.evaluador@demo.nerlatalmud.local';
 -- ============================================
 -- 4. CREAR ALUMNOS DEMO (10 alumnos)
 -- ============================================
-INSERT INTO "Alumno" (nombre, correo, tipo, status, "escuelaId", "creadoEn")
-VALUES
-  ('Yosef Cohen', 'demo.alumno1@demo.nerlatalmud.local', 'ESCUELA', 'ACTIVO', 1, NOW()),
-  ('David Levi', 'demo.alumno2@demo.nerlatalmud.local', 'ESCUELA', 'ACTIVO', 1, NOW()),
-  ('Moshe Ben-David', 'demo.alumno3@demo.nerlatalmud.local', 'INDEPENDIENTE', 'ACTIVO', NULL, NOW()),
-  ('Avi Goldstein', 'demo.alumno4@demo.nerlatalmud.local', 'ESCUELA', 'ACTIVO', 1, NOW()),
-  ('Shmuel Katz', 'demo.alumno5@demo.nerlatalmud.local', 'ESCUELA', 'EN_PAUSA', 1, NOW()),
-  ('Yitzchak Rosen', 'demo.alumno6@demo.nerlatalmud.local', 'INDEPENDIENTE', 'ACTIVO', NULL, NOW()),
-  ('Yaakov Silver', 'demo.alumno7@demo.nerlatalmud.local', 'ESCUELA', 'ACTIVO', 1, NOW()),
-  ('Chaim Weiss', 'demo.alumno8@demo.nerlatalmud.local', 'ESCUELA', 'NIVEL_LOGRADO', 1, NOW()),
-  ('Eli Friedman', 'demo.alumno9@demo.nerlatalmud.local', 'INDEPENDIENTE', 'ACTIVO', NULL, NOW()),
-  ('Daniel Schwartz', 'demo.alumno10@demo.nerlatalmud.local', 'ESCUELA', 'ACTIVO', 1, NOW())
-ON CONFLICT (correo) DO UPDATE
-SET 
-  nombre = EXCLUDED.nombre,
-  tipo = EXCLUDED.tipo,
-  status = EXCLUDED.status,
-  "escuelaId" = EXCLUDED."escuelaId";
+-- Nota: correo no es único en Alumno, así que usamos INSERT con verificación previa
+DO $$
+DECLARE
+  alumno_record RECORD;
+  alumnos_data TEXT[][] := ARRAY[
+    ['Yosef Cohen', 'demo.alumno1@demo.nerlatalmud.local', 'ESCUELA', 'ACTIVO', '1'],
+    ['David Levi', 'demo.alumno2@demo.nerlatalmud.local', 'ESCUELA', 'ACTIVO', '1'],
+    ['Moshe Ben-David', 'demo.alumno3@demo.nerlatalmud.local', 'INDEPENDIENTE', 'ACTIVO', NULL],
+    ['Avi Goldstein', 'demo.alumno4@demo.nerlatalmud.local', 'ESCUELA', 'ACTIVO', '1'],
+    ['Shmuel Katz', 'demo.alumno5@demo.nerlatalmud.local', 'ESCUELA', 'EN_PAUSA', '1'],
+    ['Yitzchak Rosen', 'demo.alumno6@demo.nerlatalmud.local', 'INDEPENDIENTE', 'ACTIVO', NULL],
+    ['Yaakov Silver', 'demo.alumno7@demo.nerlatalmud.local', 'ESCUELA', 'ACTIVO', '1'],
+    ['Chaim Weiss', 'demo.alumno8@demo.nerlatalmud.local', 'ESCUELA', 'NIVEL_LOGRADO', '1'],
+    ['Eli Friedman', 'demo.alumno9@demo.nerlatalmud.local', 'INDEPENDIENTE', 'ACTIVO', NULL],
+    ['Daniel Schwartz', 'demo.alumno10@demo.nerlatalmud.local', 'ESCUELA', 'ACTIVO', '1']
+  ];
+  i INTEGER;
+BEGIN
+  FOR i IN 1..array_length(alumnos_data, 1) LOOP
+    -- Verificar si ya existe
+    SELECT * INTO alumno_record FROM "Alumno" WHERE correo = alumnos_data[i][2];
+    
+    IF FOUND THEN
+      -- Actualizar existente
+      UPDATE "Alumno"
+      SET 
+        nombre = alumnos_data[i][1],
+        tipo = alumnos_data[i][3]::"TipoAlumno",
+        status = alumnos_data[i][4]::"StatusAlumno",
+        "escuelaId" = CASE WHEN alumnos_data[i][5] IS NOT NULL THEN alumnos_data[i][5]::INTEGER ELSE NULL END
+      WHERE id = alumno_record.id;
+    ELSE
+      -- Crear nuevo
+      INSERT INTO "Alumno" (nombre, correo, tipo, status, "escuelaId", "creadoEn")
+      VALUES (
+        alumnos_data[i][1],
+        alumnos_data[i][2],
+        alumnos_data[i][3]::"TipoAlumno",
+        alumnos_data[i][4]::"StatusAlumno",
+        CASE WHEN alumnos_data[i][5] IS NOT NULL THEN alumnos_data[i][5]::INTEGER ELSE NULL END,
+        NOW()
+      );
+    END IF;
+  END LOOP;
+END $$;
 
 -- ============================================
 -- 5. CREAR EVALUACIONES DEMO
@@ -130,25 +157,44 @@ BEGIN
       fecha_eval := CURRENT_DATE - (random() * 180)::INTEGER;
       
       -- Crear evaluación
-      INSERT INTO "Evaluacion" ("alumnoId", "evaluadorId", "tipoDiagnostico", "fechaEvaluacion", "creadoEn")
+      INSERT INTO "Evaluacion" ("alumnoId", "evaluadorId", tipo, fecha, "creadoEn")
       VALUES (alumno_ids[i], evaluador_id, tipo_diagnostico::"TipoDiagnostico", fecha_eval, NOW())
       RETURNING id INTO evaluacion_id;
       
-      -- Crear detalles de evaluación (3-6 subhabilidades)
-      INSERT INTO "EvaluacionDetalle" ("evaluacionId", subhabilidad, puntuacion, "creadoEn")
-      VALUES
-        (evaluacion_id, 'lectura_basica', (random() * 4 + 1)::INTEGER, NOW()),
-        (evaluacion_id, 'comprension_textual', (random() * 4 + 1)::INTEGER, NOW()),
-        (evaluacion_id, 'analisis_logico', (random() * 4 + 1)::INTEGER, NOW()),
-        (evaluacion_id, 'vocabulario_arameo', (random() * 4 + 1)::INTEGER, NOW()),
-        (evaluacion_id, 'traduccion_precisa', (random() * 4 + 1)::INTEGER, NOW())
-      ON CONFLICT DO NOTHING;
+      -- Crear detalles de evaluación (5 subhabilidades)
+      -- Nota: No hay restricción única, así que verificamos antes de insertar
+      IF NOT EXISTS (SELECT 1 FROM "EvaluacionDetalle" WHERE "evaluacionId" = evaluacion_id AND subhabilidad = 'lectura_basica') THEN
+        INSERT INTO "EvaluacionDetalle" ("evaluacionId", subhabilidad, nivel, "creadoEn")
+        VALUES (evaluacion_id, 'lectura_basica', (random() * 4 + 1)::INTEGER, NOW());
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM "EvaluacionDetalle" WHERE "evaluacionId" = evaluacion_id AND subhabilidad = 'comprension_textual') THEN
+        INSERT INTO "EvaluacionDetalle" ("evaluacionId", subhabilidad, nivel, "creadoEn")
+        VALUES (evaluacion_id, 'comprension_textual', (random() * 4 + 1)::INTEGER, NOW());
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM "EvaluacionDetalle" WHERE "evaluacionId" = evaluacion_id AND subhabilidad = 'analisis_logico') THEN
+        INSERT INTO "EvaluacionDetalle" ("evaluacionId", subhabilidad, nivel, "creadoEn")
+        VALUES (evaluacion_id, 'analisis_logico', (random() * 4 + 1)::INTEGER, NOW());
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM "EvaluacionDetalle" WHERE "evaluacionId" = evaluacion_id AND subhabilidad = 'vocabulario_arameo') THEN
+        INSERT INTO "EvaluacionDetalle" ("evaluacionId", subhabilidad, nivel, "creadoEn")
+        VALUES (evaluacion_id, 'vocabulario_arameo', (random() * 4 + 1)::INTEGER, NOW());
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM "EvaluacionDetalle" WHERE "evaluacionId" = evaluacion_id AND subhabilidad = 'traduccion_precisa') THEN
+        INSERT INTO "EvaluacionDetalle" ("evaluacionId", subhabilidad, nivel, "creadoEn")
+        VALUES (evaluacion_id, 'traduccion_precisa', (random() * 4 + 1)::INTEGER, NOW());
+      END IF;
       
       -- Crear reporte (50% de probabilidad)
       IF random() > 0.5 THEN
-        INSERT INTO "Reporte" ("evaluacionId", tipo, "fechaGeneracion", "creadoEn")
-        VALUES (evaluacion_id, 'PROGRESO'::"TipoReporte", fecha_eval, NOW())
-        ON CONFLICT DO NOTHING;
+        -- Verificar si ya existe un reporte para esta evaluación
+        IF NOT EXISTS (SELECT 1 FROM "Reporte" WHERE "evaluacionId" = evaluacion_id) THEN
+          INSERT INTO "Reporte" ("evaluacionId", "alumnoId", tipo, "generadoPorId", "fechaInicio", "creadoEn")
+          VALUES (evaluacion_id, alumno_ids[i], 'PROGRESO_ALUMNO'::"TipoReporte", evaluador_id, fecha_eval, NOW());
+        END IF;
       END IF;
     END LOOP;
   END LOOP;
