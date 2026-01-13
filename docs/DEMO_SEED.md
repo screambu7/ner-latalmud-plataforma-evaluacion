@@ -15,9 +15,20 @@ El script **requiere AMBAS** variables de entorno para ejecutarse:
 ```bash
 DEMO_SEED_ENABLED=true
 DEMO_SEED_CONFIRM=YES_I_KNOW_WHAT_I_AM_DOING
+DEMO_ADMIN_EMAIL=admin@demo.nerlatalmud.local
 ```
 
 **Sin estas variables, el script se detendrá inmediatamente.**
+
+### Opción 2: SQL Directo en Supabase (Recomendado si no tienes DATABASE_URL local)
+
+Ejecuta el script SQL completo en Supabase SQL Editor:
+
+```sql
+-- Ver docs/SEED_DEMO_SQL.sql
+```
+
+Este script crea todos los datos demo directamente en la base de datos sin necesidad de variables de entorno locales.
 
 ### ¿Por Qué Dos Flags?
 
