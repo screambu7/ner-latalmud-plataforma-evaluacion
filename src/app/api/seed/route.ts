@@ -47,24 +47,24 @@ export async function POST(request: Request) {
     try {
       console.log('🌱 Iniciando seed desde API...');
 
-      // Definir usuarios a crear/actualizar
-      const usuariosSeed = [
-        {
-          correo: '[REDACTED_EMAIL_1]',
-          nombre: 'Teddy',
-          rol: Rol.SUPER_ADMIN,
-        },
-        {
-          correo: '[REDACTED_EMAIL_2]',
-          nombre: 'Moshe',
-          rol: Rol.SUPER_ADMIN,
-        },
-        {
-          correo: '[REDACTED_EMAIL_3]',
-          nombre: 'Evaluador Test',
-          rol: Rol.EVALUADOR,
-        },
-      ];
+      // Obtener emails desde variable de entorno (NO hardcodear)
+      const superAdminEmails = SUPER_ADMIN_EMAILS;
+      
+      if (superAdminEmails.length === 0) {
+        return NextResponse.json(
+          { 
+            error: 'SUPER_ADMIN_EMAILS no está configurado. Configura la variable de entorno antes de ejecutar el seed.',
+          },
+          { status: 400 }
+        );
+      }
+
+      // Definir usuarios a crear/actualizar desde SUPER_ADMIN_EMAILS
+      const usuariosSeed = superAdminEmails.map(email => ({
+        correo: email,
+        nombre: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1), // Capitalizar nombre
+        rol: Rol.SUPER_ADMIN,
+      }));
 
       // Crear/actualizar usuarios
       const usuariosCreados = [];

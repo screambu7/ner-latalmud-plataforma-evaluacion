@@ -6,45 +6,31 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed...');
 
-  // Definir usuarios a crear/actualizar
-  const usuariosSeed = [
-    {
-      correo: '[REDACTED_EMAIL_1]',
-      nombre: 'Teddy',
-      rol: Rol.SUPER_ADMIN,
-    },
-    {
-      correo: '[REDACTED_EMAIL_2]',
-      nombre: 'Moshe',
-      rol: Rol.SUPER_ADMIN,
-    },
-    {
-      correo: '[REDACTED_EMAIL_3]',
-      nombre: 'Evaluador Test',
-      rol: Rol.EVALUADOR,
-    },
-  ];
+  // Obtener emails desde variable de entorno (NO hardcodear)
+  const superAdminEmails = SUPER_ADMIN_EMAILS;
+  
+  if (superAdminEmails.length === 0) {
+    console.error('❌ SUPER_ADMIN_EMAILS no está configurado. Configura la variable de entorno antes de ejecutar el seed.');
+    console.error('   Ejemplo: export SUPER_ADMIN_EMAILS="email1@example.com,email2@example.com"');
+    process.exit(1);
+  }
 
-  // Crear/actualizar usuarios
+  // Crear usuarios desde SUPER_ADMIN_EMAILS
   const usuariosCreados = [];
-  for (const usuarioData of usuariosSeed) {
-    // Determinar rol: si el correo está en SUPER_ADMIN_EMAILS, forzar SUPER_ADMIN
-    const rolFinal = isSuperAdminEmail(usuarioData.correo)
-      ? Rol.SUPER_ADMIN
-      : usuarioData.rol;
+  for (const email of superAdminEmails) {
+    const nombre = email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1); // Capitalizar nombre
 
     const usuario = await prisma.usuario.upsert({
-      where: { correo: usuarioData.correo },
+      where: { correo: email },
       update: {
-        // Actualizar rol si el correo está en la lista de super admins
-        rol: isSuperAdminEmail(usuarioData.correo) ? Rol.SUPER_ADMIN : undefined,
-        nombre: usuarioData.nombre,
+        rol: Rol.SUPER_ADMIN, // Siempre asegurar SUPER_ADMIN
+        nombre,
         estado: 'ACTIVO',
       },
       create: {
-        nombre: usuarioData.nombre,
-        correo: usuarioData.correo,
-        rol: rolFinal,
+        nombre,
+        correo: email,
+        rol: Rol.SUPER_ADMIN,
         estado: 'ACTIVO',
       },
     });

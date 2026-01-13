@@ -1,102 +1,148 @@
 # 🔐 Configuración de Variables de Entorno en Vercel
 
-## Opción 1: Vía CLI (Recomendado)
+Esta guía explica cómo configurar las variables de entorno **REQUERIDAS** en Vercel para que la aplicación funcione correctamente.
 
-### Paso 1: Linkear Proyecto (si no está linkeado)
+## ⚠️ Variables Críticas (REQUERIDAS)
 
+Estas variables **DEBEN** estar configuradas o la aplicación fallará:
+
+### 1. `JWT_SECRET`
+
+**Descripción**: Secreto para firmar tokens JWT de sesión.
+
+**Cómo generar**:
 ```bash
-cd "/Users/tedcherem/Desktop/Ner LaTalmud Plataforma/ner-latalmud-plataforma-evaluacion"
-vercel link
+openssl rand -base64 32
 ```
 
-Cuando pregunte:
-- **Set up and deploy?** → `Y` (o Enter)
-- **Which scope?** → Seleccionar tu cuenta/team
-- **Link to existing project?** → `Y` (si ya existe) o `N` (si es nuevo)
-- **What's your project's name?** → Nombre del proyecto
-- **In which directory is your code located?** → `./` (Enter)
-
-### Paso 2: Agregar Variables de Entorno
-
-Para cada variable, ejecutar (presionar ENTER cuando pregunte por branch):
-
-```bash
-# SUPER_ADMIN_EMAILS
-vercel env add SUPER_ADMIN_EMAILS preview
-# Valor: teddy@nerlatalmud.com,moshe@nerlatalmud.com
-# Branch: (Enter para todos)
-
-# APP_BASE_URL
-vercel env add APP_BASE_URL preview
-# Valor: https://staging.nerlatalmud.com (o tu URL de staging)
-# Branch: (Enter para todos)
-
-# NEXT_PUBLIC_APP_URL
-vercel env add NEXT_PUBLIC_APP_URL preview
-# Valor: https://staging.nerlatalmud.com (o tu URL de staging)
-# Branch: (Enter para todos)
-
-# PDF_STORAGE_DIR
-vercel env add PDF_STORAGE_DIR preview
-# Valor: /tmp
-# Branch: (Enter para todos)
+**Ejemplo de valor generado**:
+```
+K8j3mN9pQ2rT5vX8zA1bC4dE6fG9hI0jK2lM4nO6pQ8rS0tU2vW4xY6zA8bC0dE
 ```
 
-**Nota:** Cuando pregunte "Which Environments should it be available for?", seleccionar `Preview` (staging).
+**Dónde configurar en Vercel**:
+1. Ve a tu proyecto en Vercel Dashboard
+2. Settings → Environment Variables
+3. Agrega:
+   - **Name**: `JWT_SECRET`
+   - **Value**: (pega el valor generado)
+   - **Environment**: Production, Preview, Development (selecciona todos)
 
----
+### 2. `SUPER_ADMIN_EMAILS`
 
-## Opción 2: Vía Dashboard Web
+**Descripción**: Lista de emails de super administradores (separados por comas).
 
-1. Ir a: https://vercel.com/dashboard
-2. Seleccionar el proyecto
-3. Ir a **Settings** > **Environment Variables**
-4. Para cada variable, hacer click en **Add New**
-5. Configurar:
+**Formato**: `email1@example.com,email2@example.com`
 
-### SUPER_ADMIN_EMAILS
-- **Key:** `SUPER_ADMIN_EMAILS`
-- **Value:** `teddy@nerlatalmud.com,moshe@nerlatalmud.com`
-- **Environment:** Seleccionar `Preview` (staging)
-- **Save**
-
-### APP_BASE_URL
-- **Key:** `APP_BASE_URL`
-- **Value:** `https://staging.nerlatalmud.com` (o tu URL de staging)
-- **Environment:** Seleccionar `Preview` (staging)
-- **Save**
-
-### NEXT_PUBLIC_APP_URL
-- **Key:** `NEXT_PUBLIC_APP_URL`
-- **Value:** `https://staging.nerlatalmud.com` (o tu URL de staging)
-- **Environment:** Seleccionar `Preview` (staging)
-- **Save**
-
-### PDF_STORAGE_DIR
-- **Key:** `PDF_STORAGE_DIR`
-- **Value:** `/tmp`
-- **Environment:** Seleccionar `Preview` (staging)
-- **Save**
-
----
-
-## ⚠️ IMPORTANTE
-
-- **DATABASE_URL** también debe estar configurada (ya debería estar)
-  - ⚠️ **Si usas Supabase**: Debes usar el Connection Pooler, NO la conexión directa
-  - Ver: `docs/SUPABASE_SETUP.md` para instrucciones detalladas
-- Todas las variables deben estar en **Preview** (staging)
-- Para production, crear las mismas variables pero con valores de production
-- Después de agregar variables, hacer un nuevo deploy para que se apliquen
-
----
-
-## Verificación
-
-Después de configurar, verificar que todas las variables estén:
-
-```bash
-vercel env ls
+**Ejemplo**:
+```
+teddy@nerlatalmud.com,moshe@nerlatalmud.com
 ```
 
-Debe mostrar todas las variables configuradas para Preview.
+**Dónde configurar en Vercel**:
+1. Settings → Environment Variables
+2. Agrega:
+   - **Name**: `SUPER_ADMIN_EMAILS`
+   - **Value**: (tus emails separados por comas, SIN espacios)
+   - **Environment**: Production, Preview, Development
+
+### 3. `DATABASE_URL`
+
+**Descripción**: URL de conexión a PostgreSQL (Supabase).
+
+**Formato**: `postgresql://usuario:password@host:puerto/database?schema=public`
+
+**Ejemplo para Supabase Connection Pooler**:
+```
+postgresql://postgres.xfpfveqoqwjxpggjpqwb:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+```
+
+**Dónde configurar en Vercel**:
+1. Settings → Environment Variables
+2. Agrega:
+   - **Name**: `DATABASE_URL`
+   - **Value**: (tu connection string)
+   - **Environment**: Production, Preview, Development
+
+### 4. `APP_BASE_URL` (Opcional pero recomendado)
+
+**Descripción**: URL pública de la aplicación (sin trailing slash).
+
+**Ejemplo**:
+```
+https://ner-latalmud-plataforma-evaluacion.vercel.app
+```
+
+**Dónde configurar en Vercel**:
+1. Settings → Environment Variables
+2. Agrega:
+   - **Name**: `APP_BASE_URL`
+   - **Value**: (tu URL de Vercel)
+   - **Environment**: Production, Preview, Development
+
+### 5. `NEXT_PUBLIC_APP_URL` (Opcional pero recomendado)
+
+**Descripción**: URL pública para el cliente (sin trailing slash).
+
+**Ejemplo**:
+```
+https://ner-latalmud-plataforma-evaluacion.vercel.app
+```
+
+**Dónde configurar en Vercel**:
+1. Settings → Environment Variables
+2. Agrega:
+   - **Name**: `NEXT_PUBLIC_APP_URL`
+   - **Value**: (tu URL de Vercel)
+   - **Environment**: Production, Preview, Development
+
+## 📋 Checklist de Configuración
+
+Antes de hacer deploy, verifica que tengas:
+
+- [ ] `JWT_SECRET` generado y configurado
+- [ ] `SUPER_ADMIN_EMAILS` configurado (emails reales, separados por comas)
+- [ ] `DATABASE_URL` configurado (Connection Pooler de Supabase)
+- [ ] `APP_BASE_URL` configurado (opcional)
+- [ ] `NEXT_PUBLIC_APP_URL` configurado (opcional)
+
+## 🚨 Problemas Comunes
+
+### Error: "JWT_SECRET es REQUERIDO"
+
+**Causa**: `JWT_SECRET` no está configurado en Vercel.
+
+**Solución**: 
+1. Genera un nuevo secreto: `openssl rand -base64 32`
+2. Agrega la variable en Vercel Dashboard → Settings → Environment Variables
+3. Haz un nuevo deploy
+
+### Error: "SUPER_ADMIN_EMAILS no está configurado"
+
+**Causa**: `SUPER_ADMIN_EMAILS` no está configurado en Vercel.
+
+**Solución**:
+1. Agrega la variable en Vercel Dashboard → Settings → Environment Variables
+2. Formato: `email1@example.com,email2@example.com` (sin espacios)
+3. Haz un nuevo deploy
+
+### Error 500 en `/api/auth/login`
+
+**Causa**: Faltan variables de entorno (`JWT_SECRET` o `SUPER_ADMIN_EMAILS`).
+
+**Solución**:
+1. Verifica que todas las variables estén configuradas en Vercel
+2. Revisa los logs de Vercel para ver el error específico
+3. Haz un nuevo deploy después de agregar las variables
+
+## 🔒 Seguridad
+
+- **NUNCA** commitees variables de entorno en el código
+- **NUNCA** hardcodees emails o secretos en el código
+- **SIEMPRE** usa variables de entorno para datos sensibles
+- **SIEMPRE** verifica que las variables estén configuradas antes de hacer deploy
+
+## 📚 Referencias
+
+- [Vercel Environment Variables Documentation](https://vercel.com/docs/concepts/projects/environment-variables)
+- [Supabase Connection Pooling](https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler)

@@ -21,16 +21,18 @@ function getSuperAdminEmailsFromEnv(): string[] {
   const envEmails = process.env.SUPER_ADMIN_EMAILS;
   
   if (!envEmails) {
-    // En desarrollo, usar valores por defecto
-    if (process.env.NODE_ENV === 'development') {
-      return ['[REDACTED_EMAIL_1]', '[REDACTED_EMAIL_2]'];
+    // NUNCA usar valores por defecto con emails reales
+    // En staging/production, fallar si no está configurado
+    if (process.env.NODE_ENV !== 'development') {
+      throw new Error(
+        'SUPER_ADMIN_EMAILS no está configurado. ' +
+        'Configura la variable de entorno SUPER_ADMIN_EMAILS con los emails separados por comas.'
+      );
     }
     
-    // En staging/production, fallar si no está configurado
-    throw new Error(
-      'SUPER_ADMIN_EMAILS no está configurado. ' +
-      'Configura la variable de entorno SUPER_ADMIN_EMAILS con los emails separados por comas.'
-    );
+    // En desarrollo, retornar array vacío (el sistema debe fallar si no está configurado)
+    console.warn('[SUPER_ADMINS] SUPER_ADMIN_EMAILS no configurado. Configura la variable de entorno para desarrollo.');
+    return [];
   }
   
   return envEmails
@@ -58,13 +60,12 @@ function getSuperAdminEmails(): string[] {
       // Si falla en tiempo de importación, usar valores por defecto
       // y loguear el error para debugging
       console.error('[SUPER_ADMINS] Error al obtener emails desde env:', error);
+      // NUNCA usar valores por defecto con emails reales
+      // Usar array vacío en todos los casos si no está configurado
+      _superAdminEmails = [];
       if (process.env.NODE_ENV === 'development') {
-        _superAdminEmails = ['[REDACTED_EMAIL_1]', '[REDACTED_EMAIL_2]'];
-        console.warn('[SUPER_ADMINS] Usando valores por defecto en desarrollo');
+        console.warn('[SUPER_ADMINS] SUPER_ADMIN_EMAILS no configurado. Configura la variable de entorno para desarrollo.');
       } else {
-        // En staging/production, si no está configurado, usar array vacío
-        // Esto evitará que el sistema falle, pero ningún email será SUPER_ADMIN
-        _superAdminEmails = [];
         console.error('[SUPER_ADMINS] SUPER_ADMIN_EMAILS no configurado en staging/production. Ningún email será SUPER_ADMIN.');
       }
     }
