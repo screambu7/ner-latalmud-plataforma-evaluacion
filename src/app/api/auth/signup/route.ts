@@ -28,6 +28,31 @@ import { isSuperAdminEmail } from '@/config/super-admins';
  */
 export async function POST(request: Request) {
   console.log('[SIGNUP] Iniciando proceso de registro');
+  
+  // Verificar que DATABASE_URL esté configurada
+  if (!process.env.DATABASE_URL) {
+    console.error('[SIGNUP] DATABASE_URL no está configurada');
+    return NextResponse.json(
+      { error: 'Error de configuración del servidor. Contacta al administrador.' },
+      { status: 500 }
+    );
+  }
+  
+  // Verificar que no estemos usando mocks en producción
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+  if (isProduction && !process.env.DATABASE_URL) {
+    console.error('[SIGNUP] Intentando usar mocks en producción');
+    return NextResponse.json(
+      { error: 'Error de configuración del servidor. Contacta al administrador.' },
+      { status: 500 }
+    );
+  }
+  
+  console.log('[SIGNUP] DATABASE_URL configurada:', process.env.DATABASE_URL ? 'Sí' : 'No');
+  console.log('[SIGNUP] DATABASE_URL preview:', process.env.DATABASE_URL 
+    ? `${process.env.DATABASE_URL.substring(0, 50)}...` 
+    : 'not configured');
+  
   try {
     const body = await request.json();
     const { nombre, correo, password } = body;
@@ -71,18 +96,37 @@ export async function POST(request: Request) {
     console.log('[SIGNUP] Verificando si usuario existe...');
     let usuarioExistente;
     try {
+      // Test de conexión básica antes de la query real
+      await db.$queryRaw`SELECT 1`;
+      console.log('[SIGNUP] Conexión a BD verificada');
+      
       usuarioExistente = await db.usuario.findUnique({
         where: { correo: correoNormalizado },
       });
+      console.log('[SIGNUP] Query de usuario completada');
     } catch (dbError: any) {
       console.error('[SIGNUP] Error al verificar usuario existente:', {
         message: dbError.message,
         code: dbError.code,
+        name: dbError.name,
+        meta: dbError.meta,
       });
+      
       // Si es error de conexión, retornar error específico
-      if (dbError.message?.includes('connect') || dbError.message?.includes('connection') || dbError.code === 'P1001') {
+      if (
+        dbError.code === 'P1001' || // Can't reach database server
+        dbError.code === 'P1000' || // Authentication failed
+        dbError.code === 'P1002' || // Database server closed the connection
+        dbError.message?.includes('connect') || 
+        dbError.message?.includes('connection') ||
+        dbError.message?.includes('ECONNREFUSED') ||
+        dbError.message?.includes('timeout')
+      ) {
         return NextResponse.json(
-          { error: 'Error de conexión a la base de datos. Por favor, intenta más tarde.' },
+          { 
+            error: 'Error de conexión a la base de datos. Por favor, intenta más tarde.',
+            details: process.env.NODE_ENV === 'development' ? dbError.message : undefined,
+          },
           { status: 503 }
         );
       }
