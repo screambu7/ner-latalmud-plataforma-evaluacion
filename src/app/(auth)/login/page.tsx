@@ -31,7 +31,7 @@ function SuccessMessage() {
           />
         </svg>
         <p className="text-sm font-medium text-green-700">
-          Cuenta creada exitosamente. Inicia sesión con tus credenciales.
+          Cuenta creada exitosamente. Revisa tu correo para el link de acceso.
         </p>
       </div>
     </div>
@@ -63,7 +63,15 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Error al iniciar sesión');
+        // Si el usuario no tiene contraseña (usa Magic Link), mostrar mensaje especial
+        if (data.useMagicLink) {
+          setError(
+            'Este usuario usa autenticación por Magic Link. ' +
+            'Revisa tu correo para el link de acceso o solicita uno nuevo desde "¿Olvidaste tu contraseña?".'
+          );
+        } else {
+          setError(data.error || 'Error al iniciar sesión');
+        }
         setLoading(false);
         return;
       }
