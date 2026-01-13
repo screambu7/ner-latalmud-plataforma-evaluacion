@@ -1,42 +1,8 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-/**
- * Componente interno que maneja el mensaje de éxito desde searchParams
- * Debe estar envuelto en Suspense para Next.js 16
- */
-function SuccessMessage() {
-  const searchParams = useSearchParams();
-  const registered = searchParams.get('registered') === 'true';
-  
-  if (!registered) return null;
-  
-  return (
-    <div className="rounded-lg bg-green-50 border border-green-100 p-3">
-      <div className="flex items-center gap-2">
-        <svg
-          className="h-5 w-5 text-green-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-        <p className="text-sm font-medium text-green-700">
-          Cuenta creada exitosamente. Revisa tu correo para el link de acceso.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 export default function LoginPage() {
   const [correo, setCorreo] = useState('');
@@ -181,9 +147,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Suspense fallback={null}>
-              <SuccessMessage />
-            </Suspense>
 
             {error && (
               <div className="rounded-lg bg-red-50 border border-red-100 p-3">
