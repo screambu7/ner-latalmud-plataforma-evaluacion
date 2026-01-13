@@ -119,17 +119,28 @@ export async function POST(request: Request) {
     }
 
     // Crear usuario
-    console.log('[SIGNUP] Creando usuario en BD...');
-    const nuevoUsuario = await db.usuario.create({
-      data: {
-        nombre: nombre.trim(),
-        correo: correoNormalizado,
-        passwordHash: passwordHash,
-        rol: rol,
-        estado: EstadoCuenta.ACTIVO,
-      },
-    });
-    console.log('[SIGNUP] Usuario creado exitosamente, ID:', nuevoUsuario.id);
+    console.log('[SIGNUP] Creando usuario en BD...', { correo: correoNormalizado, rol });
+    let nuevoUsuario;
+    try {
+      nuevoUsuario = await db.usuario.create({
+        data: {
+          nombre: nombre.trim(),
+          correo: correoNormalizado,
+          passwordHash: passwordHash,
+          rol: rol,
+          estado: EstadoCuenta.ACTIVO,
+        },
+      });
+      console.log('[SIGNUP] Usuario creado exitosamente, ID:', nuevoUsuario.id);
+    } catch (createError: any) {
+      console.error('[SIGNUP] Error al crear usuario:', {
+        message: createError.message,
+        code: createError.code,
+        meta: createError.meta,
+      });
+      // Re-lanzar para que se maneje en el catch general
+      throw createError;
+    }
 
     return NextResponse.json({
       success: true,
@@ -141,6 +152,8 @@ export async function POST(request: Request) {
       code: error.code,
       stack: error.stack,
       name: error.name,
+      meta: error.meta,
+      cause: error.cause,
     });
 
     // Error de constraint (email duplicado)
