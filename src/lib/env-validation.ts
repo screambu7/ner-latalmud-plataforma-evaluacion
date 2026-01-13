@@ -92,6 +92,45 @@ export function validateSuperAdminEmails(): string {
 }
 
 /**
+ * Valida NEXT_PUBLIC_SUPABASE_URL
+ * Opcional (solo si se usa cliente Supabase)
+ * 
+ * @returns URL de Supabase o undefined si no está configurada
+ */
+export function validateSupabaseUrl(): string | undefined {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL;
+}
+
+/**
+ * Valida NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+ * Opcional (solo si se usa cliente Supabase)
+ * 
+ * @returns Key pública de Supabase o undefined si no está configurada
+ */
+export function validateSupabaseKey(): string | undefined {
+  return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+}
+
+/**
+ * Valida que ambas variables de Supabase estén configuradas.
+ * Útil para verificar antes de usar el cliente Supabase.
+ * 
+ * @throws Error si alguna variable falta
+ */
+export function validateSupabaseConfig(): void {
+  const url = validateSupabaseUrl();
+  const key = validateSupabaseKey();
+  
+  if (!url || !key) {
+    throw new Error(
+      'NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ' +
+      'deben estar configuradas para usar el cliente Supabase. ' +
+      'Ver docs/SUPABASE_CLIENT_SETUP.md'
+    );
+  }
+}
+
+/**
  * Valida todas las variables de entorno requeridas.
  * Se ejecuta al importar este módulo.
  * 
@@ -108,6 +147,7 @@ export function validateRequiredEnvVars(): void {
       validateJWTSecret();
       validateAppBaseUrl();
       validateSuperAdminEmails();
+      // Nota: Supabase es opcional, no validar aquí
     } catch (error) {
       console.error('[ENV] Error de validación de variables de entorno:', error);
       throw error;
