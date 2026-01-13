@@ -71,13 +71,17 @@ export default function SignUpPage() {
 
       console.log('[SIGNUP-CLIENT] Respuesta recibida:', response.status, response.statusText);
 
+      // Leer el texto primero para poder usarlo tanto para JSON como para texto
+      const responseText = await response.text();
       let data;
+      
       try {
-        data = await response.json();
+        // Intentar parsear como JSON
+        data = JSON.parse(responseText);
       } catch (parseError) {
-        // Si la respuesta no es JSON, usar el texto
-        const text = await response.text();
-        setError(`Error del servidor: ${text || 'Respuesta inválida'}`);
+        // Si no es JSON válido, usar el texto directamente
+        console.error('[SIGNUP-CLIENT] Error al parsear JSON:', parseError);
+        setError(`Error del servidor: ${responseText || 'Respuesta inválida'}`);
         setLoading(false);
         return;
       }
