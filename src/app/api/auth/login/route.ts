@@ -96,11 +96,11 @@ export async function POST(request: Request) {
       usuario.escuelaId || undefined
     );
 
-    // Determinar URL de redirección según rol
-    let redirectUrl = '/';
+    // Determinar URL de redirección según rol (defensivo)
+    let redirectUrl = '/evaluador-dashboard'; // Default seguro
     if (usuario.rol === Rol.SUPER_ADMIN) {
       redirectUrl = '/admin-dashboard';
-    } else if (usuario.rol === Rol.EVALUADOR) {
+    } else {
       redirectUrl = '/evaluador-dashboard';
     }
 
