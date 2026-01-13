@@ -50,9 +50,24 @@ export async function POST(request: Request) {
     }
 
     // Buscar usuario
-    const usuario = await db.usuario.findUnique({
-      where: { correo: correoNormalizado },
-    });
+    let usuario;
+    try {
+      usuario = await db.usuario.findUnique({
+        where: { correo: correoNormalizado },
+      });
+    } catch (dbError: unknown) {
+      console.error('[LOGIN] Error al buscar usuario en BD:', dbError);
+      // Si es error de columna faltante, dar mensaje específico
+      if (dbError instanceof Error && dbError.message.includes('passwordHash')) {
+        return NextResponse.json(
+          { 
+            error: 'Error de configuración: la migración de passwordHash no se ha aplicado. Contacta al administrador.',
+          },
+          { status: 500 }
+        );
+      }
+      throw dbError;
+    }
 
     if (!usuario) {
       return NextResponse.json(
@@ -63,12 +78,20 @@ export async function POST(request: Request) {
 
     // Validar contraseña si el usuario tiene passwordHash
     if (usuario.passwordHash) {
-      const isValidPassword = await bcrypt.compare(password, usuario.passwordHash);
+      try {
+        const isValidPassword = await bcrypt.compare(password, usuario.passwordHash);
 
-      if (!isValidPassword) {
+        if (!isValidPassword) {
+          return NextResponse.json(
+            { error: 'Correo o contraseña incorrectos' },
+            { status: 401 }
+          );
+        }
+      } catch (bcryptError: unknown) {
+        console.error('[LOGIN] Error en bcrypt.compare:', bcryptError);
         return NextResponse.json(
-          { error: 'Correo o contraseña incorrectos' },
-          { status: 401 }
+          { error: 'Error al validar contraseña' },
+          { status: 500 }
         );
       }
     } else {
@@ -90,11 +113,19 @@ export async function POST(request: Request) {
     }
 
     // Crear JWT de sesión y establecer cookie
-    await setSessionCookie(
-      usuario.id,
-      usuario.rol,
-      usuario.escuelaId || undefined
-    );
+    try {
+      await setSessionCookie(
+        usuario.id,
+        usuario.rol,
+        usuario.escuelaId || undefined
+      );
+    } catch (sessionError: unknown) {
+      console.error('[LOGIN] Error al crear sesión:', sessionError);
+      return NextResponse.json(
+        { error: 'Error al crear sesión. Verifica que JWT_SECRET esté configurado.' },
+        { status: 500 }
+      );
+    }
 
     // Determinar URL de redirección según rol (defensivo)
     let redirectUrl = '/evaluador-dashboard'; // Default seguro
@@ -115,9 +146,17 @@ export async function POST(request: Request) {
       redirectUrl,
     });
   } catch (error: unknown) {
-    console.error('[LOGIN] Error:', error);
+    console.error('[LOGIN] Error no manejado:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('[LOGIN] Stack:', errorStack);
+    
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { 
+        error: 'Error interno del servidor',
+        // Solo en desarrollo: incluir detalles del error
+        ...(process.env.NODE_ENV === 'development' && { details: errorMessage }),
+      },
       { status: 500 }
     );
   }
