@@ -66,9 +66,9 @@ export async function GET() {
     if (error.code === 'P1001') {
       errorType = 'connection_refused';
       errorMessage = 'No se puede alcanzar el servidor de base de datos';
-    } else if (error.code === 'P1000') {
+    } else if (error.code === 'P1000' || error.message?.includes('Authentication failed') || error.message?.includes('password authentication failed')) {
       errorType = 'authentication_failed';
-      errorMessage = 'Error de autenticación (usuario/password incorrecto)';
+      errorMessage = 'Error de autenticación: La password en DATABASE_URL no es válida. Verifica que uses tu password real de Supabase (no [PASSWORD] literal).';
     } else if (error.code === 'P1002') {
       errorType = 'connection_closed';
       errorMessage = 'El servidor cerró la conexión';
@@ -99,8 +99,18 @@ export async function GET() {
         troubleshooting: {
           checkDatabaseUrl: 'Verifica que DATABASE_URL esté configurada en Vercel',
           checkSupabase: 'Si usas Supabase, asegúrate de usar Connection Pooler (pooler.supabase.com)',
-          checkPassword: 'Verifica que la password en DATABASE_URL sea correcta (no [PASSWORD] literal)',
+          checkPassword: '🔴 CRÍTICO: Verifica que la password en DATABASE_URL sea tu password REAL de Supabase (no [PASSWORD] literal). Ver docs/SUPABASE_PASSWORD_SETUP.md',
+          checkPasswordEncoding: 'Si tu password tiene caracteres especiales (@, #, %, &), debes codificarlos (URL encoding)',
           checkNetwork: 'Verifica que el servidor de BD esté accesible desde internet',
+          stepsToFix: [
+            '1. Ve a Supabase Dashboard → Settings → Database',
+            '2. Copia tu password real (no uses [PASSWORD] como texto)',
+            '3. Si tiene caracteres especiales, codifícalos (ej: @ → %40)',
+            '4. Ve a Vercel → Settings → Environment Variables',
+            '5. Edita DATABASE_URL y reemplaza la password',
+            '6. Guarda y espera el redeploy automático',
+            '7. Prueba nuevamente /api/health/db'
+          ],
         },
       },
       { status: 503 }
