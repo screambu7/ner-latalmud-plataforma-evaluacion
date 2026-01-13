@@ -39,10 +39,25 @@ postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.co
 3. Reemplaza el valor con la URL del Connection Pooler
 4. Asegúrate de que esté configurada para **Preview** (staging) y **Production**
 
-**Ejemplo de URL correcta:**
+**Ejemplo de URL correcta (Session Mode - Recomendado):**
 ```env
-DATABASE_URL="postgresql://postgres.xfpfveqoqwjxpggjpqwb:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&schema=public"
+DATABASE_URL="postgresql://postgres.xfpfveqoqwjxpggjpqwb:TU_PASSWORD_REAL_AQUI@aws-0-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true&schema=public"
 ```
+
+**Ejemplo de URL correcta (Transaction Mode - Puerto 5432):**
+```env
+DATABASE_URL="postgresql://postgres.xfpfveqoqwjxpggjpqwb:TU_PASSWORD_REAL_AQUI@aws-0-us-west-2.pooler.supabase.com:5432/postgres?pgbouncer=true&schema=public"
+```
+
+⚠️ **IMPORTANTE**: 
+- **REEMPLAZA `TU_PASSWORD_REAL_AQUI`** con tu password real de Supabase (no dejes el texto literal)
+- `?pgbouncer=true` (requerido para connection pooler)
+- `&schema=public` (si usas schema específico)
+
+**Cómo obtener tu password:**
+1. Ve a Supabase Dashboard → Settings → Database
+2. Busca la sección "Connection string" o "Database password"
+3. Copia tu password real (no uses `[PASSWORD]` o `[YOUR-PASSWORD]` como texto literal)
 
 ### Paso 3: Verificar la Configuración
 
