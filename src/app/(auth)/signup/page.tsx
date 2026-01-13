@@ -27,6 +27,9 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('[SIGNUP-CLIENT] Formulario enviado');
     setError('');
 
     // Validaciones
@@ -51,6 +54,7 @@ export default function SignUpPage() {
     }
 
     setLoading(true);
+    console.log('[SIGNUP-CLIENT] Iniciando petición a /api/auth/signup');
 
     try {
       const response = await fetch('/api/auth/signup', {
@@ -65,6 +69,8 @@ export default function SignUpPage() {
         }),
       });
 
+      console.log('[SIGNUP-CLIENT] Respuesta recibida:', response.status, response.statusText);
+
       let data;
       try {
         data = await response.json();
@@ -77,15 +83,18 @@ export default function SignUpPage() {
       }
 
       if (!response.ok) {
+        console.error('[SIGNUP-CLIENT] Error en respuesta:', data);
         setError(data.error || 'Error al crear la cuenta');
         setLoading(false);
         return;
       }
 
+      console.log('[SIGNUP-CLIENT] Signup exitoso, redirigiendo a login');
       // Redirigir al login con mensaje de éxito
       router.push('/login?registered=true');
+      router.refresh();
     } catch (err: any) {
-      console.error('[SIGNUP] Error:', err);
+      console.error('[SIGNUP-CLIENT] Error en catch:', err);
       setError(err.message || 'Error de conexión. Por favor, intenta nuevamente.');
       setLoading(false);
     }
@@ -137,7 +146,11 @@ export default function SignUpPage() {
             Registrarse
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form 
+            onSubmit={handleSubmit} 
+            className="space-y-5"
+            noValidate
+          >
             <div>
               <label
                 htmlFor="nombre"
