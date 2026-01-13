@@ -87,9 +87,14 @@ export async function POST(request: Request) {
         );
       }
     } else {
-      // Usuario sin passwordHash - puede usar magic link o crear contraseña
+      // Usuario sin passwordHash - usa Magic Link authentication
+      // Este usuario fue creado con el sistema de Magic Link
       return NextResponse.json(
-        { error: 'Este usuario no tiene contraseña configurada. Usa el link de acceso por correo o crea una contraseña.' },
+        { 
+          error: 'Este usuario usa autenticación por Magic Link. Revisa tu correo para el link de acceso o solicita uno nuevo.',
+          useMagicLink: true,
+          magicLinkUrl: '/api/auth/request-link'
+        },
         { status: 401 }
       );
     }
