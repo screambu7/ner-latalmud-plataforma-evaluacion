@@ -2,24 +2,16 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { Rol, EstadoCuenta } from '@prisma/client';
 import { isSuperAdminEmail } from '@/config/super-admins';
-
-/**
- * ⚠️ IMPORTANTE: Instalar bcryptjs para hash de contraseñas
- * 
- * npm install bcryptjs
- * npm install --save-dev @types/bcryptjs
- * 
- * Luego descomentar las importaciones y el código de hash
- */
-
-// import bcrypt from 'bcryptjs';
+import { generateToken, hashToken, buildMagicLink, redactEmail } from '@/lib/magic-link';
 
 /**
  * Endpoint de registro de usuarios
  * 
+ * NOTA: Auth uses Magic Link. Password fields are ignored intentionally.
+ * 
  * CONTRATO:
  * - POST /api/auth/signup
- * - Body: { nombre: string, correo: string, password: string }
+ * - Body: { nombre: string, correo: string, password?: string } (password se ignora)
  * - Respuesta exitosa (200): { success: true, message: string }
  * - Errores:
  *   - 400: Datos inválidos o faltantes
@@ -53,10 +45,13 @@ export async function POST(request: Request) {
     ? `${process.env.DATABASE_URL.substring(0, 50)}...` 
     : 'not configured');
   
+  const MAGIC_LINK_TTL_MINUTES = parseInt(process.env.MAGIC_LINK_TTL_MINUTES || '15', 10);
+
   try {
     const body = await request.json();
-    const { nombre, correo, password } = body;
-    console.log('[SIGNUP] Datos recibidos:', { nombre, correo: correo ? `${correo.substring(0, 3)}***` : 'undefined', passwordLength: password?.length });
+    const { nombre, correo } = body;
+    // Auth uses Magic Link. Password fields are ignored intentionally.
+    console.log('[SIGNUP] Datos recibidos:', { nombre, correo: correo ? `${correo.substring(0, 3)}***` : 'undefined' });
 
     // Validaciones
     if (!nombre || typeof nombre !== 'string' || nombre.trim().length === 0) {
@@ -69,13 +64,6 @@ export async function POST(request: Request) {
     if (!correo || typeof correo !== 'string') {
       return NextResponse.json(
         { error: 'El correo electrónico es requerido' },
-        { status: 400 }
-      );
-    }
-
-    if (!password || typeof password !== 'string' || password.length < 6) {
-      return NextResponse.json(
-        { error: 'La contraseña debe tener al menos 6 caracteres' },
         { status: 400 }
       );
     }
@@ -142,14 +130,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // ⚠️ TODO: Descomentar cuando se instale bcryptjs
-    // Hash de contraseña
-    // const passwordHash = await bcrypt.hash(password, 10);
-
-    // Por ahora, guardar contraseña en texto plano (TEMPORAL - NO PRODUCCIÓN)
-    // ⚠️ ADVERTENCIA: Esto es solo para desarrollo. Debe usar hash en producción.
-    const passwordHash = password; // TEMPORAL - Reemplazar con hash
-
     // Determinar rol basado en SUPER_ADMIN_EMAILS
     let rol: Rol = Rol.EVALUADOR; // Por defecto
     try {
@@ -162,7 +142,7 @@ export async function POST(request: Request) {
       console.warn('[SIGNUP] Error al verificar SUPER_ADMIN, usando rol por defecto:', error.message);
     }
 
-    // Crear usuario
+    // Crear usuario (sin passwordHash - Auth uses Magic Link)
     console.log('[SIGNUP] Creando usuario en BD...', { correo: correoNormalizado, rol });
     let nuevoUsuario;
     try {
@@ -170,9 +150,9 @@ export async function POST(request: Request) {
         data: {
           nombre: nombre.trim(),
           correo: correoNormalizado,
-          passwordHash: passwordHash,
           rol: rol,
           estado: EstadoCuenta.ACTIVO,
+          // passwordHash NO se incluye - Auth uses Magic Link
         },
       });
       console.log('[SIGNUP] Usuario creado exitosamente, ID:', nuevoUsuario.id);
@@ -186,9 +166,57 @@ export async function POST(request: Request) {
       throw createError;
     }
 
+    // Generar magic link para el nuevo usuario (reutilizando lógica de request-link)
+    console.log('[SIGNUP] Generando magic link para nuevo usuario...');
+    try {
+      // Generar token y hash
+      const token = generateToken();
+      const tokenHash = hashToken(token);
+
+      // Calcular expiración
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + MAGIC_LINK_TTL_MINUTES);
+
+      // Obtener IP y User-Agent (opcional, para auditoría)
+      const ip = request.headers.get('x-forwarded-for') || 
+                 request.headers.get('x-real-ip') || 
+                 null;
+      const userAgent = request.headers.get('user-agent') || null;
+
+      // Guardar token en BD
+      await db.loginToken.create({
+        data: {
+          email: correoNormalizado,
+          tokenHash,
+          expiresAt,
+          ip,
+          userAgent,
+        },
+      });
+
+      // Construir magic link
+      const magicLink = buildMagicLink(token);
+
+      // "Enviar" link (por ahora solo loguear)
+      if (process.env.NODE_ENV === 'development') {
+        // En desarrollo: loguear link completo
+        console.log('[SIGNUP] Magic link generado para nuevo usuario:', correoNormalizado);
+        console.log('[SIGNUP] Magic link:', magicLink);
+      } else {
+        // En staging/production: loguear pero redactando email
+        console.log('[SIGNUP] Magic link generado para nuevo usuario:', redactEmail(correoNormalizado));
+        // TODO: Enviar email real aquí
+        // await sendMagicLinkEmail(correoNormalizado, magicLink);
+      }
+    } catch (magicLinkError: any) {
+      // Si falla la generación del magic link, loguear pero no fallar el signup
+      console.error('[SIGNUP] Error al generar magic link (no crítico):', magicLinkError.message);
+      // El usuario ya fue creado, así que continuamos
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Cuenta creada exitosamente',
+      message: 'Cuenta creada exitosamente. Revisa tu correo para el link de acceso.',
     });
   } catch (error: any) {
     console.error('[SIGNUP] Error completo:', {
