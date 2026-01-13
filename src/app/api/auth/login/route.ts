@@ -2,17 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { setSessionCookie } from '@/lib/auth-utils';
 import { Rol, EstadoCuenta } from '@prisma/client';
-
-/**
- * ⚠️ IMPORTANTE: Instalar bcryptjs para hash de contraseñas
- * 
- * npm install bcryptjs
- * npm install --save-dev @types/bcryptjs
- * 
- * Luego descomentar las importaciones y el código de verificación
- */
-
-// import bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 
 /**
  * Endpoint de login con contraseña
@@ -73,12 +63,7 @@ export async function POST(request: Request) {
 
     // Validar contraseña si el usuario tiene passwordHash
     if (usuario.passwordHash) {
-      // ⚠️ TODO: Descomentar cuando se instale bcryptjs
-      // const isValidPassword = await bcrypt.compare(password, usuario.passwordHash);
-      
-      // Por ahora, comparación en texto plano (TEMPORAL - NO PRODUCCIÓN)
-      // ⚠️ ADVERTENCIA: Esto es solo para desarrollo. Debe usar bcrypt.compare en producción.
-      const isValidPassword = password === usuario.passwordHash; // TEMPORAL
+      const isValidPassword = await bcrypt.compare(password, usuario.passwordHash);
 
       if (!isValidPassword) {
         return NextResponse.json(
@@ -87,13 +72,10 @@ export async function POST(request: Request) {
         );
       }
     } else {
-      // Usuario sin passwordHash - usa Magic Link authentication
-      // Este usuario fue creado con el sistema de Magic Link
+      // Usuario sin passwordHash - no puede autenticarse con contraseña
       return NextResponse.json(
         { 
-          error: 'Este usuario usa autenticación por Magic Link. Revisa tu correo para el link de acceso o solicita uno nuevo.',
-          useMagicLink: true,
-          magicLinkUrl: '/api/auth/request-link'
+          error: 'Este usuario no tiene contraseña configurada. Contacta al administrador para configurar una contraseña.',
         },
         { status: 401 }
       );
@@ -132,7 +114,7 @@ export async function POST(request: Request) {
       },
       redirectUrl,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[LOGIN] Error:', error);
     return NextResponse.json(
       { error: 'Error interno del servidor' },
