@@ -30,6 +30,13 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        // Log para debugging
+        console.error('[LOGIN] Error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          data,
+        });
+        
         // Si el usuario no tiene contraseña (usa Magic Link), mostrar mensaje especial
         if (data.useMagicLink) {
           setError(
@@ -37,7 +44,7 @@ export default function LoginPage() {
             'Revisa tu correo para el link de acceso o solicita uno nuevo desde "¿Olvidaste tu contraseña?".'
           );
         } else {
-          setError(data.error || 'Error al iniciar sesión');
+          setError(data.error || `Error al iniciar sesión (${response.status})`);
         }
         setLoading(false);
         return;
