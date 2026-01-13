@@ -146,11 +146,16 @@ BEGIN
   -- Crear 2-3 evaluaciones por alumno
   FOR i IN 1..array_length(alumno_ids, 1) LOOP
     FOR j IN 1..3 LOOP
-      -- Tipo de diagnóstico aleatorio
-      tipo_diagnostico := CASE (j % 3)
-        WHEN 0 THEN 'INICIAL'
-        WHEN 1 THEN 'SEGUIMIENTO'
-        ELSE 'FINAL'
+      -- Tipo de diagnóstico aleatorio (valores válidos del enum)
+      tipo_diagnostico := CASE (j % 8)
+        WHEN 0 THEN 'GV_EXP_DEF_FACIL'
+        WHEN 1 THEN 'GV_EXP_FACIL'
+        WHEN 2 THEN 'GV_HA_FACIL_NK'
+        WHEN 3 THEN 'GV_HA_FACIL_SN'
+        WHEN 4 THEN 'GN_EXP_DEF_FACIL'
+        WHEN 5 THEN 'GN_EXP_FACIL'
+        WHEN 6 THEN 'GN_HA_FACIL_NK'
+        ELSE 'GN_HA_FACIL_SN'
       END;
       
       -- Fecha aleatoria en los últimos 6 meses
