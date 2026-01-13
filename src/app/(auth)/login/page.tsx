@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [devMagicLink, setDevMagicLink] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -165,6 +166,24 @@ export default function LoginPage() {
                     />
                   </svg>
                   <p className="text-sm font-medium text-red-700">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {devMagicLink && (
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+                <div className="mb-2">
+                  <p className="text-sm font-semibold text-amber-900">
+                    Modo desarrollo: acceso temporal
+                  </p>
+                </div>
+                <div className="mt-2">
+                  <p className="text-xs text-amber-800 mb-2">Magic Link:</p>
+                  <div className="bg-white rounded border border-amber-200 p-2 break-all">
+                    <code className="text-xs text-amber-900 select-all">
+                      {devMagicLink}
+                    </code>
+                  </div>
                 </div>
               </div>
             )}

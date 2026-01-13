@@ -1,16 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { generateToken, hashToken, buildMagicLink, redactEmail } from '@/lib/magic-link';
 
-/**
- * ⚠️ IMPORTANTE: Implementar envío de emails
- * 
- * Opciones recomendadas:
- * - Resend (https://resend.com)
- * - SendGrid
- * - Nodemailer con SMTP
- * 
- * También se puede implementar con tokens de reset en BD
- */
+const MAGIC_LINK_TTL_MINUTES = parseInt(process.env.MAGIC_LINK_TTL_MINUTES || '15', 10);
 
 /**
  * Endpoint para solicitar recuperación de contraseña
@@ -18,12 +10,13 @@ import { db } from '@/lib/db';
  * CONTRATO:
  * - POST /api/auth/forgot-password
  * - Body: { correo: string }
- * - Respuesta exitosa (200): { success: true, message: string }
+ * - Respuesta exitosa (200): { success: true, message: string, magicLink?: string }
  * - Errores:
  *   - 400: Correo inválido o faltante
  *   - 500: Error del servidor
  * 
- * NOTA: Por seguridad, siempre retorna éxito aunque el email no exista
+ * NOTA: Por seguridad, siempre retorna éxito aunque el email no exista.
+ * Usa magic links para acceso (mismo sistema que request-link).
  */
 export async function POST(request: Request) {
   try {
@@ -50,36 +43,71 @@ export async function POST(request: Request) {
       );
     }
 
-    // Buscar usuario
-    const usuario = await db.usuario.findUnique({
-      where: { correo: correoNormalizado },
+    // Generar token y hash
+    const token = generateToken();
+    const tokenHash = hashToken(token);
+
+    // Calcular expiración
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + MAGIC_LINK_TTL_MINUTES);
+
+    // Obtener IP y User-Agent (opcional, para auditoría)
+    const ip = request.headers.get('x-forwarded-for') || 
+               request.headers.get('x-real-ip') || 
+               null;
+    const userAgent = request.headers.get('user-agent') || null;
+
+    // Guardar token en BD (incluso si el usuario no existe aún)
+    await db.loginToken.create({
+      data: {
+        email: correoNormalizado,
+        tokenHash,
+        expiresAt,
+        ip,
+        userAgent,
+      },
     });
 
-    // ⚠️ TODO: Implementar lógica de recuperación
-    // 1. Generar token de reset (UUID o similar)
-    // 2. Guardar token en BD con expiración (ej: 1 hora)
-    // 3. Enviar email con enlace de reset
-    // 4. Crear endpoint /api/auth/reset-password para procesar el reset
+    // Construir magic link
+    const magicLink = buildMagicLink(token);
 
-    // Por ahora, solo loguear (no enviar email real)
-    // No loguear email completo en producción (PII)
-    if (usuario) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[FORGOT-PASSWORD] Token de reset generado para:', correoNormalizado);
-      } else {
-        console.log('[FORGOT-PASSWORD] Token de reset generado');
-      }
-      // TODO: Generar token y enviar email
+    // Verificar flags de desarrollo para exposición segura
+    const isDevMode = process.env.AUTH_DEV_MODE === 'true';
+    const shouldExposeMagicLink = process.env.AUTH_DEV_EXPOSE_MAGIC_LINK === 'true';
+    const canExposeMagicLink = isDevMode && shouldExposeMagicLink;
+
+    // Logging y exposición controlada por flags
+    if (canExposeMagicLink) {
+      // Solo loguear si AMBOS flags están habilitados
+      console.log('[DEV-ONLY][MAGIC-LINK] Link generado para:', correoNormalizado);
+      console.log('[DEV-ONLY][MAGIC-LINK] Link:', magicLink);
     } else {
-      // No loguear email en ningún caso por seguridad
-      console.log('[FORGOT-PASSWORD] Email no encontrado (no revelar)');
+      // En producción o sin flags: no loguear magic link
+      // Solo loguear email redactado si no está en dev mode
+      if (!isDevMode) {
+        console.log('[FORGOT-PASSWORD] Link generado para:', redactEmail(correoNormalizado));
+      }
+      // TODO: Enviar email real aquí
+      // await sendMagicLinkEmail(correoNormalizado, magicLink);
+    }
+
+    // Construir respuesta base
+    const response: {
+      success: true;
+      message: string;
+      magicLink?: string;
+    } = {
+      success: true,
+      message: 'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña',
+    };
+
+    // Incluir magicLink en respuesta SOLO si ambos flags están habilitados
+    if (canExposeMagicLink) {
+      response.magicLink = magicLink;
     }
 
     // Por seguridad, siempre retornar éxito
-    return NextResponse.json({
-      success: true,
-      message: 'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña',
-    });
+    return NextResponse.json(response);
   } catch (error: any) {
     console.error('[FORGOT-PASSWORD] Error:', error);
     return NextResponse.json(

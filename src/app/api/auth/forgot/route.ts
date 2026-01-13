@@ -70,23 +70,43 @@ export async function POST(request: Request) {
     // Construir magic link
     const magicLink = buildMagicLink(token);
 
-    // "Enviar" link (por ahora solo loguear)
-    if (process.env.NODE_ENV === 'development') {
-      // En desarrollo: loguear link completo
-      console.log('[FORGOT] Link generado para:', correoNormalizado);
-      console.log('[FORGOT] Link:', magicLink);
+    // Verificar flags de desarrollo para exposición segura
+    const isDevMode = process.env.AUTH_DEV_MODE === 'true';
+    const shouldExposeMagicLink = process.env.AUTH_DEV_EXPOSE_MAGIC_LINK === 'true';
+    const canExposeMagicLink = isDevMode && shouldExposeMagicLink;
+
+    // Logging y exposición controlada por flags
+    if (canExposeMagicLink) {
+      // Solo loguear si AMBOS flags están habilitados
+      console.log('[DEV-ONLY][MAGIC-LINK] Link generado para:', correoNormalizado);
+      console.log('[DEV-ONLY][MAGIC-LINK] Link:', magicLink);
     } else {
-      // En staging/production: loguear pero redactando email
-      console.log('[FORGOT] Link generado para:', redactEmail(correoNormalizado));
+      // En producción o sin flags: no loguear magic link
+      // Solo loguear email redactado si no está en dev mode
+      if (!isDevMode) {
+        console.log('[FORGOT] Link generado para:', redactEmail(correoNormalizado));
+      }
       // TODO: Enviar email real aquí
       // await sendMagicLinkEmail(correoNormalizado, magicLink);
     }
 
-    // Siempre retornar éxito (para evitar enumeración de usuarios)
-    return NextResponse.json({
+    // Construir respuesta base
+    const response: {
+      success: true;
+      message: string;
+      magicLink?: string;
+    } = {
       success: true,
       message: 'Si el correo existe en nuestro sistema, recibirás un link de acceso en breve.',
-    });
+    };
+
+    // Incluir magicLink en respuesta SOLO si ambos flags están habilitados
+    if (canExposeMagicLink) {
+      response.magicLink = magicLink;
+    }
+
+    // Siempre retornar éxito (para evitar enumeración de usuarios)
+    return NextResponse.json(response);
   } catch (error: any) {
     console.error('[FORGOT] Error al procesar solicitud:', error);
     

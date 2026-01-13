@@ -9,6 +9,7 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [devMagicLink, setDevMagicLink] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +33,13 @@ export default function ForgotPasswordPage() {
         setError(data.error || 'Error al procesar la solicitud');
         setLoading(false);
         return;
+      }
+
+      // Capturar magicLink si está presente (solo en dev mode con flags habilitados)
+      if (data.magicLink) {
+        setDevMagicLink(data.magicLink);
+      } else {
+        setDevMagicLink(null);
       }
 
       setSuccess(true);
@@ -197,6 +205,24 @@ export default function ForgotPasswordPage() {
               <p className="text-slate-500 text-xs">
                 Revisa tu bandeja de entrada y carpeta de spam.
               </p>
+
+              {devMagicLink && (
+                <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-4 text-left">
+                  <div className="mb-2">
+                    <p className="text-sm font-semibold text-amber-900">
+                      Modo desarrollo: acceso temporal
+                    </p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-xs text-amber-800 mb-2">Magic Link:</p>
+                    <div className="bg-white rounded border border-amber-200 p-2 break-all">
+                      <code className="text-xs text-amber-900 select-all">
+                        {devMagicLink}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
