@@ -15,7 +15,7 @@ model Usuario {
   id            Int          @id @default(autoincrement())
   nombre        String
   correo        String       @unique
-  passwordHash  String?      // Hash de contraseña (opcional para compatibilidad con usuarios existentes)
+  passwordHash  String? // Hash de contraseña (opcional para compatibilidad con usuarios existentes)
   celular       String?
   rol           Rol
   estado        EstadoCuenta
@@ -28,6 +28,8 @@ model Usuario {
   evaluacionesCreadas Evaluacion[] @relation("Evaluador")
   reportesGenerados   Reporte[]    @relation("GeneradoPor")
   archivosSubidos     Archivo[]    @relation("SubidoPor")
+
+  @@index([escuelaId])
 }
 
 model Escuela {
@@ -59,6 +61,8 @@ model Alumno {
   // Relaciones
   evaluaciones Evaluacion[]
   reportes     Reporte[]
+
+  @@index([escuelaId])
 }
 
 model Evaluacion {
@@ -75,6 +79,9 @@ model Evaluacion {
   // Relaciones
   detalles EvaluacionDetalle[]
   reportes Reporte[]
+
+  @@index([alumnoId])
+  @@index([evaluadorId])
 }
 
 model EvaluacionDetalle {
@@ -84,6 +91,8 @@ model EvaluacionDetalle {
   subhabilidad String
   nivel        Int
   creadoEn     DateTime   @default(now())
+
+  @@index([evaluacionId])
 }
 
 model Reporte {
@@ -103,6 +112,10 @@ model Reporte {
 
   // Relaciones
   archivos Archivo[]
+
+  @@index([evaluacionId])
+  @@index([alumnoId])
+  @@index([generadoPorId])
 }
 
 model Archivo {
@@ -119,17 +132,21 @@ model Archivo {
   subidoPor      Usuario     @relation("SubidoPor", fields: [subidoPorId], references: [id], onDelete: Restrict)
   creadoEn       DateTime    @default(now())
   actualizadoEn  DateTime    @default(now()) @updatedAt
+
+  @@index([reporteId])
+  @@index([subidoPorId])
 }
 
 model LoginToken {
-  id           Int       @id @default(autoincrement())
-  email        String
-  tokenHash    String    @unique
-  expiresAt    DateTime
-  usedAt       DateTime?
-  createdAt    DateTime  @default(now())
-  ip           String?
-  userAgent    String?
+  id        Int       @id @default(autoincrement())
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  ip        String?
+  userAgent String?
+
   @@index([email])
   @@index([expiresAt])
 }
