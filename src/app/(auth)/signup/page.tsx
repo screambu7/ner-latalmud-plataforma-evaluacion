@@ -15,6 +15,8 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [successEmail, setSuccessEmail] = useState('');
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,10 +95,11 @@ export default function SignUpPage() {
         return;
       }
 
-      console.log('[SIGNUP-CLIENT] Signup exitoso, redirigiendo a login');
-      // Redirigir al login con mensaje de éxito
-      router.push('/login?registered=true');
-      router.refresh();
+      console.log('[SIGNUP-CLIENT] Signup exitoso');
+      // Mostrar pantalla de éxito en lugar de redirigir
+      setSuccessEmail(formData.correo);
+      setSuccess(true);
+      setLoading(false);
     } catch (err: any) {
       console.error('[SIGNUP-CLIENT] Error en catch:', err);
       setError(err.message || 'Error de conexión. Por favor, intenta nuevamente.');
@@ -146,11 +149,65 @@ export default function SignUpPage() {
 
         {/* Card de Sign Up */}
         <div className="rounded-2xl bg-white p-8 shadow-lg shadow-primary/10 border border-neutral-100">
-          <h2 className="mb-6 text-xl font-bold text-[#0d151b] text-center">
-            Registrarse
-          </h2>
+          {success ? (
+            /* Pantalla de éxito */
+            <div className="text-center">
+              <div className="mb-6 flex justify-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+                  <svg
+                    className="h-12 w-12 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <h2 className="mb-4 text-2xl font-bold text-[#0d151b]">
+                ¡Cuenta creada exitosamente!
+              </h2>
+              <p className="mb-6 text-slate-600 text-sm leading-relaxed">
+                Revisa tu correo electrónico <span className="font-semibold text-slate-800">{successEmail}</span> para acceder con el link de inicio de sesión.
+              </p>
+              <div className="space-y-3">
+                <Link
+                  href="/login"
+                  className="block w-full rounded-lg bg-primary px-4 py-3 text-white font-semibold shadow-lg shadow-primary/30 hover:bg-primary-dark active:scale-[0.98] transition-all"
+                >
+                  Volver al inicio de sesión
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSuccess(false);
+                    setSuccessEmail('');
+                    setFormData({
+                      nombre: '',
+                      correo: '',
+                      password: '',
+                      confirmPassword: '',
+                    });
+                    setError('');
+                  }}
+                  className="block w-full rounded-lg border-2 border-neutral-200 px-4 py-3 text-slate-700 font-semibold hover:bg-neutral-50 active:scale-[0.98] transition-all"
+                >
+                  Crear otra cuenta
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h2 className="mb-6 text-xl font-bold text-[#0d151b] text-center">
+                Registrarse
+              </h2>
 
-          <form 
+              <form 
             onSubmit={handleSubmit} 
             className="space-y-5"
             noValidate
@@ -327,6 +384,8 @@ export default function SignUpPage() {
               Iniciar sesión
             </Link>
           </div>
+            </>
+          )}
         </div>
 
         {/* Footer de la página */}
