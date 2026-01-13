@@ -110,9 +110,16 @@ export async function POST(request: Request) {
     return NextResponse.json(response);
   } catch (error: any) {
     console.error('[FORGOT-PASSWORD] Error:', error);
-    return NextResponse.json(
-      { error: 'Error al procesar la solicitud' },
-      { status: 500 }
-    );
+    console.error('[FORGOT-PASSWORD] Error details:', {
+      message: error?.message,
+      code: error?.code,
+      name: error?.name,
+    });
+    
+    // Por seguridad, siempre retornar éxito genérico (evita enumeración)
+    return NextResponse.json({
+      success: true,
+      message: 'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña',
+    });
   }
 }

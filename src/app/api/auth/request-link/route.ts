@@ -1,20 +1,36 @@
 /**
  * API Route: Request Magic Link (PR1)
  * 
+ * ⚠️ MAGIC LINK FROZEN – password auth only.
+ * 
  * POST /api/auth/request-link
  * Body: { correo: string }
  * 
  * Genera un magic link y lo "envía" (por ahora solo loguea en consola).
  * Siempre retorna éxito para evitar enumeración de usuarios.
+ * 
+ * STATUS: FROZEN - Este endpoint está deshabilitado.
+ * El sistema ahora usa autenticación por contraseña únicamente.
  */
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { generateToken, hashToken, buildMagicLink, redactEmail } from '@/lib/magic-link';
+// MAGIC LINK FROZEN – password auth only.
+// import { db } from '@/lib/db';
+// import { generateToken, hashToken, buildMagicLink, redactEmail } from '@/lib/magic-link';
 
-const MAGIC_LINK_TTL_MINUTES = parseInt(process.env.MAGIC_LINK_TTL_MINUTES || '15', 10);
+// const MAGIC_LINK_TTL_MINUTES = parseInt(process.env.MAGIC_LINK_TTL_MINUTES || '15', 10);
 
 export async function POST(request: Request) {
+  // MAGIC LINK FROZEN – password auth only.
+  return NextResponse.json(
+    { 
+      error: 'Magic Link authentication is no longer available. Please use password authentication.',
+      message: 'Este endpoint ha sido deshabilitado. Usa autenticación por contraseña.',
+    },
+    { status: 410 } // 410 Gone - Resource no longer available
+  );
+
+  /* MAGIC LINK FROZEN – password auth only.
   try {
     const body = await request.json();
     const { correo } = body;
@@ -113,4 +129,5 @@ export async function POST(request: Request) {
       message: 'Si el correo existe en nuestro sistema, recibirás un link de acceso en breve.',
     });
   }
+  */
 }

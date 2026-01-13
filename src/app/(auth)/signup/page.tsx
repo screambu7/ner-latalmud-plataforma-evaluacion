@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function SignUpPage() {
@@ -17,7 +16,6 @@ export default function SignUpPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState(false);
   const [successEmail, setSuccessEmail] = useState('');
-  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -100,9 +98,10 @@ export default function SignUpPage() {
       setSuccessEmail(formData.correo);
       setSuccess(true);
       setLoading(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[SIGNUP-CLIENT] Error en catch:', err);
-      setError(err.message || 'Error de conexión. Por favor, intenta nuevamente.');
+      const errorMessage = err instanceof Error ? err.message : 'Error de conexión. Por favor, intenta nuevamente.';
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -247,6 +246,7 @@ export default function SignUpPage() {
                 onChange={handleChange}
                 required
                 disabled={loading}
+                autoComplete="email"
                 className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
                 placeholder="tu@correo.com"
               />
@@ -269,6 +269,7 @@ export default function SignUpPage() {
                   required
                   disabled={loading}
                   minLength={6}
+                  autoComplete="new-password"
                   className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 pr-12 text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
                   placeholder="Mínimo 6 caracteres"
                 />
@@ -301,6 +302,7 @@ export default function SignUpPage() {
                   onChange={handleChange}
                   required
                   disabled={loading}
+                  autoComplete="new-password"
                   className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 pr-12 text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
                   placeholder="Repite tu contraseña"
                 />

@@ -1,20 +1,36 @@
 /**
  * API Route: Magic Link Callback (PR1)
  * 
+ * ⚠️ MAGIC LINK FROZEN – password auth only.
+ * 
  * GET /api/auth/callback?token=...
  * 
  * Valida el token del magic link, crea/actualiza usuario y establece sesión JWT.
+ * 
+ * STATUS: FROZEN - Este endpoint está deshabilitado.
+ * El sistema ahora usa autenticación por contraseña únicamente.
  */
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { hashToken } from '@/lib/magic-link';
-import { signSessionJWT } from '@/lib/jwt';
-import { isSuperAdminEmail } from '@/config/super-admins';
-import { Rol, EstadoCuenta } from '@prisma/client';
-import { cookies } from 'next/headers';
+// MAGIC LINK FROZEN – password auth only.
+// import { db } from '@/lib/db';
+// import { hashToken } from '@/lib/magic-link';
+// import { signSessionJWT } from '@/lib/jwt';
+// import { isSuperAdminEmail } from '@/config/super-admins';
+// import { Rol, EstadoCuenta } from '@prisma/client';
+// import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
+  // MAGIC LINK FROZEN – password auth only.
+  return NextResponse.json(
+    { 
+      error: 'Magic Link authentication is no longer available. Please use password authentication.',
+      message: 'Este endpoint ha sido deshabilitado. Usa autenticación por contraseña.',
+    },
+    { status: 410 } // 410 Gone - Resource no longer available
+  );
+
+  /* MAGIC LINK FROZEN – password auth only.
   try {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token');
@@ -120,4 +136,5 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+  */
 }
