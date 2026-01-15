@@ -15,7 +15,7 @@
 
 import { requireRole, requireAnyRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { Rol, StatusAlumno, TipoAlumno } from '@prisma/client';
+import { Rol, StatusAlumno, TipoAlumno, TipoReporte } from '@prisma/client';
 import type {
   EvaluadorDashboardDataV2,
   PerfilDiagnosticoData,
@@ -701,6 +701,12 @@ async function obtenerNotasAcademicas(
 /**
  * Obtiene el reporte de progreso de un alumno.
  * 
+ * Implementa:
+ * - Autorización (EVALUADOR o SUPER_ADMIN)
+ * - Scoping correcto según rol y escuela
+ * - Queries Prisma eficientes (últimos 6 meses)
+ * - Cálculos usando utilidades existentes
+ * 
  * @param alumnoId - ID del alumno
  * @returns Datos del reporte o error
  */
@@ -708,12 +714,31 @@ export async function getReporteProgreso(
   alumnoId: number
 ): Promise<ActionResult<ReporteProgresoData>> {
   try {
-    const user = await requireRole(Rol.EVALUADOR);
+    // 1. Autorización: Requerir EVALUADOR o SUPER_ADMIN
+    const user = await requireAnyRole([Rol.SUPER_ADMIN, Rol.EVALUADOR]);
 
-    // Obtener alumno
+    // 2. Obtener usuario completo con escuelaId para scoping
+    const usuarioCompleto = await db.usuario.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        rol: true,
+        escuelaId: true,
+      },
+    });
+
+    if (!usuarioCompleto) {
+      return { success: false, error: 'Usuario no encontrado' };
+    }
+
+    // 3. Obtener alumno con datos necesarios
     const alumno = await db.alumno.findUnique({
       where: { id: alumnoId },
-      include: {
+      select: {
+        id: true,
+        nombre: true,
+        tipo: true,
+        escuelaId: true,
         escuela: {
           select: {
             nombre: true,
@@ -726,40 +751,83 @@ export async function getReporteProgreso(
       return { success: false, error: 'Alumno no encontrado' };
     }
 
-    // Obtener todas las evaluaciones del alumno
+    // 4. Aplicar scoping según reglas (igual que guardarEvaluacionActiva y getPerfilDiagnostico):
+    // - SUPER_ADMIN: acceso total
+    // - EVALUADOR con escuelaId: alumno de su escuela O INDEPENDIENTE
+    // - EVALUADOR sin escuelaId: solo INDEPENDIENTE
+    if (usuarioCompleto.rol === Rol.EVALUADOR) {
+      if (usuarioCompleto.escuelaId) {
+        // Evaluador con escuela: puede ver alumnos de su escuela O independientes
+        if (alumno.escuelaId !== null && alumno.escuelaId !== usuarioCompleto.escuelaId) {
+          return {
+            success: false,
+            error: 'No autorizado: solo puedes ver reportes de alumnos de tu escuela o alumnos independientes',
+          };
+        }
+        // Si alumno.escuelaId === usuarioCompleto.escuelaId: OK
+        // Si alumno.tipo === INDEPENDIENTE: OK
+      } else {
+        // Evaluador sin escuela: solo alumnos independientes
+        if (alumno.tipo !== TipoAlumno.INDEPENDIENTE) {
+          return {
+            success: false,
+            error: 'No autorizado: solo puedes ver reportes de alumnos independientes',
+          };
+        }
+      }
+    }
+    // SUPER_ADMIN: sin restricciones (continúa)
+
+    // 5. Calcular fecha límite (últimos 6 meses)
+    const fechaLimite = new Date();
+    fechaLimite.setMonth(fechaLimite.getMonth() - 6);
+
+    // 6. Obtener evaluaciones del alumno (últimos 6 meses, ordenadas ASC)
     const evaluaciones = await db.evaluacion.findMany({
       where: {
         alumnoId: alumnoId,
+        fecha: {
+          gte: fechaLimite,
+        },
       },
-      include: {
-        detalles: true,
+      select: {
+        id: true,
+        alumnoId: true,
+        tipo: true,
+        fecha: true,
+        detalles: {
+          select: {
+            subhabilidad: true,
+            nivel: true,
+          },
+        },
       },
       orderBy: {
         fecha: 'asc',
       },
     });
 
-    // Transformar a formato puro
+    // 7. Transformar a formato puro para cálculos
     const evaluacionesPuras = transformarEvaluacionesPrisma(
-      evaluaciones.map((e: (typeof evaluaciones)[0]) => ({
+      evaluaciones.map((e) => ({
         id: e.id,
         alumnoId: e.alumnoId,
         tipo: e.tipo,
         fecha: e.fecha,
-        detalles: e.detalles.map((d: (typeof e.detalles)[0]) => ({
+        detalles: e.detalles.map((d) => ({
           subhabilidad: d.subhabilidad,
           nivel: d.nivel,
         })),
       }))
     );
 
-    // Calcular habilidades clave (radar chart)
+    // 8. Calcular habilidades clave (radar chart) usando utilidades existentes
     const habilidadesClave = calcularMapaHabilidades(
       evaluacionesPuras,
       HABILIDADES_GENERALES
     );
 
-    // Determinar nivel según promedio
+    // 9. Determinar nivel según promedio global
     const promedioGlobal = calcularPromedioGlobalAlumno(evaluacionesPuras);
     const promedioPorcentaje = promedioGlobal.valido
       ? Math.round((promedioGlobal.promedio / 4) * 100)
@@ -774,18 +842,18 @@ export async function getReporteProgreso(
       nivel = 'basico';
     }
 
-    // Calcular progreso semestral (últimos 6 meses)
+    // 10. Calcular progreso semestral (últimos 6 meses) usando función existente
     const progresoSemestral = calcularProgresoSemestral(evaluaciones);
 
-    // Generar resumen ejecutivo
+    // 11. Generar resumen ejecutivo usando función existente
     const resumenEjecutivo = generarResumenEjecutivo(
       habilidadesClave,
       promedioPorcentaje,
       evaluacionesPuras
     );
 
-    // Obtener recomendación del Moré
-    const recomendacionMore = await obtenerRecomendacionMore(alumnoId, user.id);
+    // 12. Obtener recomendación del Moré
+    const recomendacionMore = await obtenerRecomendacionMore(alumnoId, usuarioCompleto.id);
 
     const data: ReporteProgresoData = {
       alumno: {
@@ -813,6 +881,101 @@ export async function getReporteProgreso(
     return {
       success: false,
       error: 'Error al obtener reporte de progreso',
+    };
+  }
+}
+
+/**
+ * Guarda un reporte de progreso en la base de datos.
+ * 
+ * Esta función guarda el payload del reporte para poder generar PDFs
+ * versionados sin recalcular datos.
+ * 
+ * @param alumnoId - ID del alumno
+ * @param datosReporte - Datos del reporte a guardar
+ * @returns ID del reporte creado o error
+ */
+export async function guardarReporteProgreso(
+  alumnoId: number,
+  datosReporte: ReporteProgresoData
+): Promise<ActionResult<{ reporteId: number }>> {
+  try {
+    // 1. Autorización: Requerir EVALUADOR o SUPER_ADMIN
+    const user = await requireAnyRole([Rol.SUPER_ADMIN, Rol.EVALUADOR]);
+
+    // 2. Obtener usuario completo con escuelaId para scoping
+    const usuarioCompleto = await db.usuario.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        rol: true,
+        escuelaId: true,
+      },
+    });
+
+    if (!usuarioCompleto) {
+      return { success: false, error: 'Usuario no encontrado' };
+    }
+
+    // 3. Obtener alumno para validar scoping
+    const alumno = await db.alumno.findUnique({
+      where: { id: alumnoId },
+      select: {
+        id: true,
+        tipo: true,
+        escuelaId: true,
+      },
+    });
+
+    if (!alumno) {
+      return { success: false, error: 'Alumno no encontrado' };
+    }
+
+    // 4. Aplicar scoping (igual que getReporteProgreso)
+    if (usuarioCompleto.rol === Rol.EVALUADOR) {
+      if (usuarioCompleto.escuelaId) {
+        if (alumno.escuelaId !== null && alumno.escuelaId !== usuarioCompleto.escuelaId) {
+          return {
+            success: false,
+            error: 'No autorizado: solo puedes guardar reportes de alumnos de tu escuela o alumnos independientes',
+          };
+        }
+      } else {
+        if (alumno.tipo !== TipoAlumno.INDEPENDIENTE) {
+          return {
+            success: false,
+            error: 'No autorizado: solo puedes guardar reportes de alumnos independientes',
+          };
+        }
+      }
+    }
+
+    // 5. Calcular fechas del período (últimos 6 meses)
+    const fechaFin = new Date();
+    const fechaInicio = new Date();
+    fechaInicio.setMonth(fechaInicio.getMonth() - 6);
+
+    // 6. Guardar reporte en BD
+    const reporte = await db.reporte.create({
+      data: {
+        tipo: 'PROGRESO_ALUMNO',
+        alumnoId: alumnoId,
+        generadoPorId: usuarioCompleto.id,
+        contenido: datosReporte as any, // Guardar como JSON
+        fechaInicio,
+        fechaFin,
+      },
+    });
+
+    return { success: true, data: { reporteId: reporte.id } };
+  } catch (error) {
+    console.error('Error en guardarReporteProgreso:', error);
+    if (error instanceof Error && (error.message === 'No autenticado' || error.message === 'No autorizado')) {
+      return { success: false, error: error.message };
+    }
+    return {
+      success: false,
+      error: 'Error al guardar reporte de progreso',
     };
   }
 }
@@ -1083,16 +1246,18 @@ export async function guardarEvaluacionActiva(
     const fieldErrors: Record<string, string> = {};
 
     // Validar alumnoId
-    let alumnoIdNum: number;
+    let alumnoIdNum: number | undefined;
     if (typeof payload.alumnoId === 'string') {
       alumnoIdNum = parseInt(payload.alumnoId, 10);
       if (isNaN(alumnoIdNum)) {
         fieldErrors.alumnoId = 'ID de alumno inválido';
+        alumnoIdNum = undefined;
       }
     } else if (typeof payload.alumnoId === 'number') {
       alumnoIdNum = payload.alumnoId;
     } else {
       fieldErrors.alumnoId = 'ID de alumno es requerido';
+      alumnoIdNum = undefined;
     }
 
     // Validar tipo
@@ -1145,6 +1310,15 @@ export async function guardarEvaluacionActiva(
         success: false,
         error: 'Errores de validación en los datos',
         fieldErrors,
+      };
+    }
+
+    // Verificar que alumnoIdNum esté definido (TypeScript guard)
+    if (alumnoIdNum === undefined) {
+      return {
+        success: false,
+        error: 'ID de alumno es requerido',
+        fieldErrors: { alumnoId: 'ID de alumno es requerido' },
       };
     }
 
