@@ -13,9 +13,9 @@
 
 'use server';
 
-import { requireRole } from '@/lib/auth';
+import { requireRole, requireAnyRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { Rol } from '@prisma/client';
+import { Rol, StatusAlumno, TipoAlumno } from '@prisma/client';
 import type {
   EvaluadorDashboardDataV2,
   PerfilDiagnosticoData,
@@ -104,6 +104,9 @@ export type ActionResult<T> =
  * Obtiene los datos del dashboard del evaluador.
  * 
  * Calcula estadísticas basadas en las evaluaciones del evaluador actual.
+ * Aplica scoping correcto según rol:
+ * - SUPER_ADMIN: ve todos los datos
+ * - EVALUADOR: solo alumnos de su escuela o alumnos independientes
  * 
  * @returns Datos del dashboard o error
  */
@@ -111,12 +114,49 @@ export async function getEvaluadorDashboard(): Promise<
   ActionResult<EvaluadorDashboardDataV2>
 > {
   try {
-    const user = await requireRole(Rol.EVALUADOR);
+    // Permitir tanto SUPER_ADMIN como EVALUADOR
+    const user = await requireAnyRole([Rol.SUPER_ADMIN, Rol.EVALUADOR]);
 
-    // Obtener todas las evaluaciones del evaluador
+    // Obtener usuario completo con escuelaId
+    const usuarioCompleto = await db.usuario.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        nombre: true,
+        rol: true,
+        escuelaId: true,
+      },
+    });
+
+    if (!usuarioCompleto) {
+      return { success: false, error: 'Usuario no encontrado' };
+    }
+
+    // Construir filtro de scoping para alumnos
+    let alumnoWhere: any = {};
+    if (usuarioCompleto.rol === Rol.EVALUADOR) {
+      // EVALUADOR: solo alumnos de su escuela o alumnos independientes
+      if (usuarioCompleto.escuelaId) {
+        alumnoWhere = {
+          OR: [
+            { escuelaId: usuarioCompleto.escuelaId },
+            { tipo: TipoAlumno.INDEPENDIENTE },
+          ],
+        };
+      } else {
+        // Evaluador sin escuela: solo alumnos independientes
+        alumnoWhere = {
+          tipo: TipoAlumno.INDEPENDIENTE,
+        };
+      }
+    }
+    // SUPER_ADMIN: sin filtro (ve todos los alumnos)
+
+    // Obtener todas las evaluaciones del evaluador con scoping correcto
     const evaluaciones = await db.evaluacion.findMany({
       where: {
         evaluadorId: user.id,
+        alumno: alumnoWhere,
       },
       include: {
         detalles: true,
@@ -146,8 +186,26 @@ export async function getEvaluadorDashboard(): Promise<
       }))
     );
 
+    // Obtener total de alumnos asignados (según scoping)
+    const totalAlumnosAsignados = await db.alumno.count({
+      where: alumnoWhere,
+    });
+
+    // Obtener alumnos activos (según scoping)
+    const alumnosActivos = await db.alumno.count({
+      where: {
+        ...alumnoWhere,
+        status: StatusAlumno.ACTIVO,
+      },
+    });
+
     // Calcular estadísticas
-    const stats = calcularStatsDashboard(evaluacionesPuras, evaluaciones);
+    const stats = calcularStatsDashboard(
+      evaluacionesPuras,
+      evaluaciones,
+      totalAlumnosAsignados,
+      alumnosActivos
+    );
 
     // Obtener actividad reciente
     const recentActivity = obtenerActividadReciente(evaluaciones);
@@ -155,20 +213,12 @@ export async function getEvaluadorDashboard(): Promise<
     // Generar calendario del mes actual
     const calendar = generarCalendarioMesActual();
 
-    // Obtener datos del evaluador
-    const evaluadorData = await db.usuario.findUnique({
-      where: { id: user.id },
-      select: {
-        nombre: true,
-      },
-    });
-
     const data: EvaluadorDashboardDataV2 = {
       evaluador: {
-        nombre: evaluadorData?.nombre || 'Evaluador',
+        nombre: usuarioCompleto.nombre || 'Evaluador',
         avatarUrl: '', // TODO: Agregar campo avatarUrl al schema si es necesario
       },
-      saludo: `Shalom, ${evaluadorData?.nombre || 'Evaluador'}`,
+      saludo: `Shalom, ${usuarioCompleto.nombre || 'Evaluador'}`,
       stats,
       recentActivity,
       calendar,
@@ -195,7 +245,9 @@ function calcularStatsDashboard(
   evaluacionesPrisma: Array<{
     fecha: Date;
     alumno: { id: number; nombre: string };
-  }>
+  }>,
+  totalAlumnosAsignados: number,
+  alumnosActivos: number
 ): DashboardStatsV2 {
   // Alumnos únicos evaluados
   const alumnosUnicos = new Set(evaluaciones.map((e) => e.alumnoId));
@@ -261,29 +313,61 @@ function calcularStatsDashboard(
 }
 
 /**
+ * Formatea el tipo de diagnóstico para mostrarlo de manera legible.
+ */
+function formatearTipoDiagnostico(tipo: string): string {
+  // Reemplazar guiones bajos por espacios y capitalizar
+  return tipo
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+/**
  * Obtiene la actividad reciente de evaluaciones.
+ * 
+ * Devuelve las últimas 5 evaluaciones con fecha, alumno y tipo.
  */
 function obtenerActividadReciente(
   evaluaciones: Array<{
     id: number;
     fecha: Date;
+    tipo: string;
     alumno: { id: number; nombre: string };
   }>
 ): RecentActivity[] {
-  // Tomar las últimas 3 evaluaciones
-  const ultimasEvaluaciones = evaluaciones.slice(0, 3);
+  // Tomar las últimas 5 evaluaciones
+  const ultimasEvaluaciones = evaluaciones.slice(0, 5);
+
+  // Si no hay evaluaciones, retornar array vacío
+  if (ultimasEvaluaciones.length === 0) {
+    return [];
+  }
 
   return ultimasEvaluaciones.map((evaluacion) => {
     const diasAtras = Math.floor(
       (Date.now() - evaluacion.fecha.getTime()) / (1000 * 60 * 60 * 24)
     );
 
+    // Formatear tiempo atrás
+    let tiempoAtras: string;
+    if (diasAtras === 0) {
+      tiempoAtras = 'hoy';
+    } else if (diasAtras === 1) {
+      tiempoAtras = 'ayer';
+    } else {
+      tiempoAtras = `${diasAtras}d`;
+    }
+
+    // Formatear nombre del examen con tipo
+    const tipoFormateado = formatearTipoDiagnostico(evaluacion.tipo);
+    const examenNombre = `${tipoFormateado}`;
+
     return {
       id: evaluacion.id.toString(),
       estudianteNombre: evaluacion.alumno.nombre,
       estudianteAvatarUrl: '', // TODO: Agregar avatar si es necesario
-      examenNombre: `Evaluación #${evaluacion.id}`,
-      tiempoAtras: diasAtras === 0 ? 'hoy' : `${diasAtras}d`,
+      examenNombre,
+      tiempoAtras,
     };
   });
 }
@@ -321,6 +405,12 @@ function generarCalendarioMesActual(): CalendarMonth {
 /**
  * Obtiene el perfil de diagnóstico de un alumno.
  * 
+ * Implementa:
+ * - Autorización (EVALUADOR o SUPER_ADMIN)
+ * - Scoping correcto según rol y escuela
+ * - Queries Prisma eficientes
+ * - Cálculos usando utilidades existentes
+ * 
  * @param alumnoId - ID del alumno
  * @returns Datos del perfil o error
  */
@@ -328,12 +418,31 @@ export async function getPerfilDiagnostico(
   alumnoId: number
 ): Promise<ActionResult<PerfilDiagnosticoData>> {
   try {
-    const user = await requireRole(Rol.EVALUADOR);
+    // 1. Autorización: Requerir EVALUADOR o SUPER_ADMIN
+    const user = await requireAnyRole([Rol.SUPER_ADMIN, Rol.EVALUADOR]);
 
-    // Obtener alumno
+    // 2. Obtener usuario completo con escuelaId para scoping
+    const usuarioCompleto = await db.usuario.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        rol: true,
+        escuelaId: true,
+      },
+    });
+
+    if (!usuarioCompleto) {
+      return { success: false, error: 'Usuario no encontrado' };
+    }
+
+    // 3. Obtener alumno con datos necesarios
     const alumno = await db.alumno.findUnique({
       where: { id: alumnoId },
-      include: {
+      select: {
+        id: true,
+        nombre: true,
+        tipo: true,
+        escuelaId: true,
         escuela: {
           select: {
             nombre: true,
@@ -346,45 +455,83 @@ export async function getPerfilDiagnostico(
       return { success: false, error: 'Alumno no encontrado' };
     }
 
-    // Obtener todas las evaluaciones del alumno
+    // 4. Aplicar scoping según reglas (igual que guardarEvaluacionActiva):
+    // - SUPER_ADMIN: acceso total
+    // - EVALUADOR con escuelaId: alumno de su escuela O INDEPENDIENTE
+    // - EVALUADOR sin escuelaId: solo INDEPENDIENTE
+    if (usuarioCompleto.rol === Rol.EVALUADOR) {
+      if (usuarioCompleto.escuelaId) {
+        // Evaluador con escuela: puede ver alumnos de su escuela O independientes
+        if (alumno.escuelaId !== null && alumno.escuelaId !== usuarioCompleto.escuelaId) {
+          return {
+            success: false,
+            error: 'No autorizado: solo puedes ver perfiles de alumnos de tu escuela o alumnos independientes',
+          };
+        }
+        // Si alumno.escuelaId === usuarioCompleto.escuelaId: OK
+        // Si alumno.tipo === INDEPENDIENTE: OK
+      } else {
+        // Evaluador sin escuela: solo alumnos independientes
+        if (alumno.tipo !== TipoAlumno.INDEPENDIENTE) {
+          return {
+            success: false,
+            error: 'No autorizado: solo puedes ver perfiles de alumnos independientes',
+          };
+        }
+      }
+    }
+    // SUPER_ADMIN: sin restricciones (continúa)
+
+    // 5. Obtener evaluaciones del alumno (ordenadas ASC para timeline)
     const evaluaciones = await db.evaluacion.findMany({
       where: {
         alumnoId: alumnoId,
       },
-      include: {
-        detalles: true,
+      select: {
+        id: true,
+        alumnoId: true,
+        tipo: true,
+        fecha: true,
+        detalles: {
+          select: {
+            subhabilidad: true,
+            nivel: true,
+          },
+        },
       },
       orderBy: {
-        fecha: 'desc',
+        fecha: 'asc', // ASC para timeline histórico
       },
     });
 
-    // Transformar a formato puro
+    // 6. Transformar a formato puro para cálculos
     const evaluacionesPuras = transformarEvaluacionesPrisma(
-      evaluaciones.map((e: (typeof evaluaciones)[0]) => ({
+      evaluaciones.map((e) => ({
         id: e.id,
         alumnoId: e.alumnoId,
         tipo: e.tipo,
         fecha: e.fecha,
-        detalles: e.detalles.map((d: (typeof e.detalles)[0]) => ({
+        detalles: e.detalles.map((d) => ({
           subhabilidad: d.subhabilidad,
           nivel: d.nivel,
         })),
       }))
     );
 
-    // Calcular mapa de habilidades (radar chart)
+    // 7. Calcular mapa de habilidades (radar chart) usando utilidades existentes
     const mapaHabilidades = calcularMapaHabilidades(
       evaluacionesPuras,
       HABILIDADES_GENERALES
     );
 
-    // Generar historial de evaluaciones
-    const historialEvaluaciones = generarHistorialEvaluaciones(evaluaciones);
+    // 8. Generar historial de evaluaciones (ordenado DESC para mostrar más recientes primero)
+    const evaluacionesParaHistorial = evaluaciones.slice().reverse(); // Revertir para mostrar más recientes primero
+    const historialEvaluaciones = generarHistorialEvaluaciones(evaluacionesParaHistorial);
 
-    // Obtener notas académicas (si existen)
-    const notasAcademicas = await obtenerNotasAcademicas(alumnoId, user.id);
+    // 9. Obtener notas académicas
+    const notasAcademicas = await obtenerNotasAcademicas(alumnoId, usuarioCompleto.id);
 
+    // 10. Construir respuesta
     const data: PerfilDiagnosticoData = {
       alumno: {
         id: alumno.id.toString(),
@@ -895,6 +1042,212 @@ export async function guardarEvaluacion(
     if (error instanceof Error && (error.message === 'No autenticado' || error.message === 'No autorizado')) {
       return { success: false, error: error.message };
     }
+    return {
+      success: false,
+      error: 'Error al guardar evaluación',
+    };
+  }
+}
+
+// ============================================
+// GUARDAR EVALUACIÓN ACTIVA
+// ============================================
+
+/**
+ * Guarda una evaluación activa desde la UI.
+ * 
+ * Esta función implementa:
+ * - Validaciones server-side completas
+ * - Autorización (EVALUADOR o SUPER_ADMIN)
+ * - Scoping correcto según rol y escuela
+ * - Transacción para garantizar atomicidad
+ * 
+ * @param payload - Payload de evaluación (alumnoId, tipo, detalles)
+ * @returns Resultado con evaluacionId o errores
+ */
+export async function guardarEvaluacionActiva(
+  payload: {
+    alumnoId: number | string;
+    tipo: string;
+    detalles: Array<{ subhabilidad: string; nivel: number }>;
+  }
+): Promise<
+  | { success: true; evaluacionId: number }
+  | { success: false; error: string; fieldErrors?: Record<string, string> }
+> {
+  try {
+    // 1. Autorización: Requerir EVALUADOR o SUPER_ADMIN
+    const user = await requireAnyRole([Rol.EVALUADOR, Rol.SUPER_ADMIN]);
+
+    // 2. Validaciones de entrada
+    const fieldErrors: Record<string, string> = {};
+
+    // Validar alumnoId
+    let alumnoIdNum: number;
+    if (typeof payload.alumnoId === 'string') {
+      alumnoIdNum = parseInt(payload.alumnoId, 10);
+      if (isNaN(alumnoIdNum)) {
+        fieldErrors.alumnoId = 'ID de alumno inválido';
+      }
+    } else if (typeof payload.alumnoId === 'number') {
+      alumnoIdNum = payload.alumnoId;
+    } else {
+      fieldErrors.alumnoId = 'ID de alumno es requerido';
+    }
+
+    // Validar tipo
+    const tiposValidos: string[] = [
+      'GV_EXP_DEF_FACIL',
+      'GV_EXP_FACIL',
+      'GV_HA_FACIL_NK',
+      'GV_HA_FACIL_SN',
+      'GN_EXP_DEF_FACIL',
+      'GN_EXP_FACIL',
+      'GN_HA_FACIL_NK',
+      'GN_HA_FACIL_SN',
+      'GV_EXP_DEF_DIFICIL',
+      'GV_EXP_DIFICIL',
+      'GV_HA_DIFICIL_NK',
+      'GV_HA_DIFICIL_SN',
+      'GN_EXP_DEF_DIFICIL',
+      'GN_EXP_DIFICIL',
+      'GN_HA_DIFICIL_NK',
+      'GN_HA_DIFICIL_SN',
+    ];
+    if (!payload.tipo || typeof payload.tipo !== 'string') {
+      fieldErrors.tipo = 'Tipo de diagnóstico es requerido';
+    } else if (!tiposValidos.includes(payload.tipo)) {
+      fieldErrors.tipo = 'Tipo de diagnóstico inválido';
+    }
+
+    // Validar detalles
+    if (!Array.isArray(payload.detalles) || payload.detalles.length === 0) {
+      fieldErrors.detalles = 'Debe haber al menos un detalle';
+    } else {
+      payload.detalles.forEach((detalle, index) => {
+        if (!detalle.subhabilidad || typeof detalle.subhabilidad !== 'string' || detalle.subhabilidad.trim() === '') {
+          fieldErrors[`detalles.${index}.subhabilidad`] = 'Subhabilidad es requerida';
+        }
+        if (
+          typeof detalle.nivel !== 'number' ||
+          !Number.isInteger(detalle.nivel) ||
+          detalle.nivel < 1 ||
+          detalle.nivel > 4
+        ) {
+          fieldErrors[`detalles.${index}.nivel`] = 'Nivel debe ser un entero entre 1 y 4';
+        }
+      });
+    }
+
+    // Si hay errores de validación, retornar
+    if (Object.keys(fieldErrors).length > 0) {
+      return {
+        success: false,
+        error: 'Errores de validación en los datos',
+        fieldErrors,
+      };
+    }
+
+    // 3. Obtener usuario completo con escuelaId para scoping
+    const usuarioCompleto = await db.usuario.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        rol: true,
+        escuelaId: true,
+      },
+    });
+
+    if (!usuarioCompleto) {
+      return { success: false, error: 'Usuario no encontrado' };
+    }
+
+    // 4. Obtener alumno con datos completos para scoping
+    const alumno = await db.alumno.findUnique({
+      where: { id: alumnoIdNum },
+      select: {
+        id: true,
+        tipo: true,
+        escuelaId: true,
+      },
+    });
+
+    if (!alumno) {
+      return { success: false, error: 'Alumno no encontrado' };
+    }
+
+    // 5. Aplicar scoping según reglas:
+    // - SUPER_ADMIN: puede evaluar cualquier alumno
+    // - EVALUADOR con escuelaId: puede evaluar alumnos de su escuela O alumnos INDEPENDIENTES
+    // - EVALUADOR sin escuelaId: solo alumnos INDEPENDIENTES
+    if (usuarioCompleto.rol === Rol.EVALUADOR) {
+      if (usuarioCompleto.escuelaId) {
+        // Evaluador con escuela: puede evaluar alumnos de su escuela O independientes
+        if (alumno.escuelaId !== null && alumno.escuelaId !== usuarioCompleto.escuelaId) {
+          return {
+            success: false,
+            error: 'No autorizado: solo puedes evaluar alumnos de tu escuela o alumnos independientes',
+          };
+        }
+        // Si alumno.escuelaId === usuarioCompleto.escuelaId: OK
+        // Si alumno.tipo === INDEPENDIENTE: OK
+      } else {
+        // Evaluador sin escuela: solo alumnos independientes
+        if (alumno.tipo !== TipoAlumno.INDEPENDIENTE) {
+          return {
+            success: false,
+            error: 'No autorizado: solo puedes evaluar alumnos independientes',
+          };
+        }
+      }
+    }
+    // SUPER_ADMIN: sin restricciones (continúa)
+
+    // 6. Persistencia en transacción
+    const evaluacion = await db.$transaction(async (tx) => {
+      // Crear evaluación
+      const nuevaEvaluacion = await tx.evaluacion.create({
+        data: {
+          alumnoId: alumnoIdNum,
+          evaluadorId: usuarioCompleto.id,
+          tipo: payload.tipo as any, // Cast a TipoDiagnostico enum
+          fecha: new Date(),
+        },
+      });
+
+      // Crear detalles con createMany (más eficiente)
+      await tx.evaluacionDetalle.createMany({
+        data: payload.detalles.map((d) => ({
+          evaluacionId: nuevaEvaluacion.id,
+          subhabilidad: d.subhabilidad.trim(),
+          nivel: d.nivel,
+        })),
+      });
+
+      return nuevaEvaluacion;
+    });
+
+    return { success: true, evaluacionId: evaluacion.id };
+  } catch (error) {
+    console.error('Error en guardarEvaluacionActiva:', error);
+
+    // Manejar errores de autorización
+    if (error instanceof Error && (error.message === 'No autenticado' || error.message === 'No autorizado')) {
+      return { success: false, error: error.message };
+    }
+
+    // Manejar errores de constraint/DB
+    if (error instanceof Error) {
+      // Errores de Prisma (constraints, etc.)
+      if (error.message.includes('Unique constraint') || error.message.includes('Foreign key constraint')) {
+        return {
+          success: false,
+          error: 'Error al guardar evaluación: conflicto de datos',
+        };
+      }
+    }
+
+    // Error genérico
     return {
       success: false,
       error: 'Error al guardar evaluación',

@@ -1,163 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { guardarEvaluacion, getDatosEvaluacionActiva } from '@/app/actions/evaluador';
-import { getSubhabilidadesPorTipo, type Nivel, type TipoDiagnostico } from '@/lib/rubricas';
+import { getDatosEvaluacionActiva, guardarEvaluacionActiva } from '@/app/actions/evaluador';
+import type { TipoDiagnostico } from '@/lib/rubricas';
 import type { EvaluacionActivaData } from '@/lib/types/evaluador-dtos';
+import {
+  prepararPayload,
+  validarCriterios,
+  type CriteriosEvaluacion,
+  type EvaluacionPayload,
+} from '@/lib/utils/evaluacion-payload';
 
 interface PageProps {
   params: Promise<{ id: string }>;
-}
-
-/**
- * Mapea valores de inputs visuales a Nivel interno (1-4).
- * 
- * ⚠️ TODO: Confirmar mapeo exacto con especificación maestra.
- * 
- * La UI actual tiene:
- * - Estrellas: 1-5 (lectura: fluidez, precisión)
- * - Slider: 1-10 (lógica: profundidad análisis)
- * - Botones: 1-5 (traducción: vocabulario arameo)
- * 
- * Mapeo temporal (requiere validación):
- * - Estrellas 1-5 → Nivel 1-4 (lineal: 1→1, 2→1, 3→2, 4→3, 5→4)
- * - Slider 1-10 → Nivel 1-4 (lineal: 1-3→1, 4-5→2, 6-7→3, 8-10→4)
- * - Botones 1-5 → Nivel 1-4 (lineal: 1→1, 2→1, 3→2, 4→3, 5→4)
- */
-function mapearEstrellasANivel(estrellas: number): Nivel {
-  // Mapeo lineal: 1→1, 2→1, 3→2, 4→3, 5→4
-  if (estrellas <= 1) return 1;
-  if (estrellas <= 2) return 1;
-  if (estrellas <= 3) return 2;
-  if (estrellas <= 4) return 3;
-  return 4;
-}
-
-function mapearSliderANivel(slider: number): Nivel {
-  // Mapeo lineal: 1-3→1, 4-5→2, 6-7→3, 8-10→4
-  if (slider <= 3) return 1;
-  if (slider <= 5) return 2;
-  if (slider <= 7) return 3;
-  return 4;
-}
-
-function mapearBotonANivel(boton: number): Nivel {
-  // Mapeo lineal: 1→1, 2→1, 3→2, 4→3, 5→4
-  if (boton <= 1) return 1;
-  if (boton <= 2) return 1;
-  if (boton <= 3) return 2;
-  if (boton <= 4) return 3;
-  return 4;
-}
-
-/**
- * Mapea los criterios visuales a subhabilidades y niveles.
- * 
- * ⚠️ TODO: Confirmar mapeo exacto de criterios visuales a subhabilidades
- * con especificación maestra. 
- * 
- * REQUIERE ESPECIFICACIÓN:
- * - ¿Qué subhabilidad corresponde a "lectura.fluidez"?
- * - ¿Qué subhabilidad corresponde a "lectura.precision"?
- * - ¿Qué subhabilidad corresponde a "logica.profundidadAnalisis"?
- * - ¿Qué subhabilidad corresponde a "traduccion.vocabularioArameo"?
- * 
- * Por ahora, se mapea de forma genérica buscando por palabras clave en el nombre.
- * Esto es TEMPORAL y debe reemplazarse con mapeo canónico.
- */
-function mapearCriteriosASubhabilidades(
-  criterios: {
-    lectura: { fluidez: number; precision: number };
-    logica: { profundidadAnalisis: number };
-    traduccion: { vocabularioArameo: number };
-  },
-  subhabilidades: Array<{ key: string; label: string }>
-): Array<{ subhabilidad: string; nivel: Nivel }> {
-  const detalles: Array<{ subhabilidad: string; nivel: Nivel }> = [];
-
-  // Mapear lectura - fluidez
-  // ⚠️ TODO: Definir subhabilidad exacta para fluidez de lectura
-  const subhabilidadFluidez = subhabilidades.find((s) =>
-    s.key.toLowerCase().includes('fluidez') ||
-    s.key.toLowerCase().includes('lectura') ||
-    s.label.toLowerCase().includes('fluidez')
-  );
-  if (subhabilidadFluidez && criterios.lectura.fluidez > 0) {
-    detalles.push({
-      subhabilidad: subhabilidadFluidez.key,
-      nivel: mapearEstrellasANivel(criterios.lectura.fluidez),
-    });
-  }
-
-  // Mapear lectura - precisión
-  // ⚠️ TODO: Definir subhabilidad exacta para precisión de lectura
-  const subhabilidadPrecision = subhabilidades.find((s) =>
-    s.key.toLowerCase().includes('precision') ||
-    s.key.toLowerCase().includes('dikduk') ||
-    s.label.toLowerCase().includes('precision')
-  );
-  if (subhabilidadPrecision && criterios.lectura.precision > 0) {
-    detalles.push({
-      subhabilidad: subhabilidadPrecision.key,
-      nivel: mapearEstrellasANivel(criterios.lectura.precision),
-    });
-  }
-
-  // Mapear lógica - profundidad análisis
-  // ⚠️ TODO: Definir subhabilidad exacta para profundidad de análisis lógico
-  const subhabilidadLogica = subhabilidades.find((s) =>
-    s.key.toLowerCase().includes('logica') ||
-    s.key.toLowerCase().includes('svarah') ||
-    s.key.toLowerCase().includes('analisis') ||
-    s.label.toLowerCase().includes('lógica')
-  );
-  if (subhabilidadLogica && criterios.logica.profundidadAnalisis > 0) {
-    detalles.push({
-      subhabilidad: subhabilidadLogica.key,
-      nivel: mapearSliderANivel(criterios.logica.profundidadAnalisis),
-    });
-  }
-
-  // Mapear traducción - vocabulario arameo
-  // ⚠️ TODO: Definir subhabilidad exacta para vocabulario arameo
-  const subhabilidadVocabulario = subhabilidades.find((s) =>
-    s.key.toLowerCase().includes('vocabulario') ||
-    s.key.toLowerCase().includes('arameo') ||
-    s.key.toLowerCase().includes('targum') ||
-    s.label.toLowerCase().includes('vocabulario')
-  );
-  if (subhabilidadVocabulario && criterios.traduccion.vocabularioArameo > 0) {
-    detalles.push({
-      subhabilidad: subhabilidadVocabulario.key,
-      nivel: mapearBotonANivel(criterios.traduccion.vocabularioArameo),
-    });
-  }
-
-  // Si no se encontraron mapeos, usar todas las subhabilidades disponibles
-  // asignando valores basados en el promedio de los criterios
-  // ⚠️ TODO: Eliminar este fallback cuando se defina el mapeo canónico
-  if (detalles.length === 0 && subhabilidades.length > 0) {
-    // Calcular promedio de criterios para asignar a subhabilidades sin mapeo
-    const promedioCriterios =
-      (criterios.lectura.fluidez +
-        criterios.lectura.precision +
-        criterios.logica.profundidadAnalisis / 2 +
-        criterios.traduccion.vocabularioArameo) /
-      4;
-    
-    const nivelPromedio = mapearEstrellasANivel(Math.round(promedioCriterios));
-
-    // Asignar a todas las subhabilidades disponibles
-    for (const subhabilidad of subhabilidades) {
-      detalles.push({
-        subhabilidad: subhabilidad.key,
-        nivel: nivelPromedio,
-      });
-    }
-  }
-
-  return detalles;
 }
 
 export default function EvaluacionActivaPage({ params }: PageProps) {
@@ -168,9 +24,15 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
   const [data, setData] = useState<EvaluacionActivaData | null>(null);
   const [notasRapidas, setNotasRapidas] = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  // Estado para validaciones visuales
+  const [validacionesTocadas, setValidacionesTocadas] = useState({
+    lecturaFluidez: false,
+    lecturaPrecision: false,
+    traduccionVocabulario: false,
+  });
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -232,8 +94,17 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
     cargarDatos();
   }, [params]);
 
+  // Handlers con estado controlado y validaciones visuales
   const handleStarClick = (section: 'lectura', field: 'fluidez' | 'precision', value: number) => {
     if (!data) return;
+    
+    // Marcar como tocado para validación visual
+    if (field === 'fluidez') {
+      setValidacionesTocadas((prev) => ({ ...prev, lecturaFluidez: true }));
+    } else if (field === 'precision') {
+      setValidacionesTocadas((prev) => ({ ...prev, lecturaPrecision: true }));
+    }
+    
     setData((prev) => ({
       ...prev!,
       criterios: {
@@ -261,6 +132,10 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
 
   const handleVocabularioClick = (value: number) => {
     if (!data) return;
+    
+    // Marcar como tocado para validación visual
+    setValidacionesTocadas((prev) => ({ ...prev, traduccionVocabulario: true }));
+    
     setData((prev) => ({
       ...prev!,
       criterios: {
@@ -276,110 +151,118 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
     setNotasRapidas((prev) => (prev ? `${prev} ${nota}` : nota));
   };
 
+  // Validación en tiempo real (solo visual)
+  const validacion = useMemo(() => {
+    if (!data) return null;
+    return validarCriterios(data.criterios);
+  }, [data]);
+
+  // Preparar payload (NO se envía aún)
+  const payload: EvaluacionPayload | null = useMemo(() => {
+    if (!alumnoId || !tipoDiagnostico || !data) return null;
+    return prepararPayload(alumnoId, tipoDiagnostico, data.criterios, subhabilidades);
+  }, [alumnoId, tipoDiagnostico, data, subhabilidades]);
+
+  // Verificar si el formulario está completo y válido
+  const isFormValid = payload !== null && validacion?.esValido === true;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSaving(true);
-    setSuccess(false);
 
     if (!alumnoId || !tipoDiagnostico || !data) {
       setError('Datos incompletos');
-      setSaving(false);
       return;
     }
 
-    // Validar que los criterios estén completos
-    if (
-      data.criterios.lectura.fluidez === 0 ||
-      data.criterios.lectura.precision === 0 ||
-      data.criterios.traduccion.vocabularioArameo === 0
-    ) {
-      setError('Debe completar todos los criterios de evaluación');
-      setSaving(false);
+    // Validar criterios
+    const validacionResult = validarCriterios(data.criterios);
+    if (!validacionResult.esValido) {
+      setError(validacionResult.errores.join('. '));
+      // Marcar todos los campos como tocados para mostrar validaciones
+      setValidacionesTocadas({
+        lecturaFluidez: true,
+        lecturaPrecision: true,
+        traduccionVocabulario: true,
+      });
       return;
     }
 
-    // Mapear criterios visuales a subhabilidades y niveles
-    const detalles = mapearCriteriosASubhabilidades(data.criterios, subhabilidades);
-
-    // Validar que todas las subhabilidades requeridas estén evaluadas
-    if (detalles.length === 0) {
+    // Preparar payload
+    const payloadPreparado = prepararPayload(alumnoId, tipoDiagnostico, data.criterios, subhabilidades);
+    
+    if (!payloadPreparado) {
       setError('No se pudieron mapear los criterios a subhabilidades');
-      setSaving(false);
       return;
     }
 
-    // Validar que todas las subhabilidades del tipo estén presentes
-    const subhabilidadesRequeridas = getSubhabilidadesPorTipo(tipoDiagnostico);
-    const subhabilidadesEvaluadas = new Set(detalles.map((d) => d.subhabilidad));
-    const faltantes = subhabilidadesRequeridas.filter(
-      (s) => !subhabilidadesEvaluadas.has(s.key)
-    );
-
-    if (faltantes.length > 0) {
-      // ⚠️ TODO: Decidir si es obligatorio evaluar todas las subhabilidades
-      // Por ahora, solo se advierte pero se permite continuar
-      console.warn('Subhabilidades no evaluadas:', faltantes.map((s) => s.label));
-    }
-
-    // Validar que todos los niveles estén en rango (1-4)
-    const nivelesInvalidos = detalles.filter((d) => d.nivel < 1 || d.nivel > 4);
-    if (nivelesInvalidos.length > 0) {
-      setError('Algunos niveles están fuera del rango válido (1-4)');
-      setSaving(false);
-      return;
-    }
+    // Guardar evaluación
+    setSaving(true);
+    setError('');
 
     try {
-      const result = await guardarEvaluacion(
-        alumnoId,
-        tipoDiagnostico,
-        detalles.map((d) => ({
-          subhabilidad: d.subhabilidad,
-          nivel: d.nivel,
-        }))
-      );
+      const result = await guardarEvaluacionActiva(payloadPreparado);
 
       if (!result.success) {
-        setError(result.error || 'Error al guardar evaluación');
+        // Mapear errores de campo si existen
+        if (result.fieldErrors) {
+          const erroresTexto = Object.values(result.fieldErrors).join('. ');
+          setError(erroresTexto || result.error || 'Error al guardar evaluación');
+        } else {
+          setError(result.error || 'Error al guardar evaluación');
+        }
         setSaving(false);
         return;
       }
 
-      // Éxito: mostrar confirmación y redirigir
-      setSuccess(true);
-      setSaving(false);
-
-      // Redirigir al perfil de diagnóstico del alumno después de 1.5 segundos
-      setTimeout(() => {
-        router.push(`/perfil-diagnostico/${alumnoId}`);
-      }, 1500);
+      // Éxito: redirigir al perfil de diagnóstico
+      router.push(`/perfil-diagnostico/${alumnoId}`);
     } catch (err) {
+      console.error('Error al guardar evaluación:', err);
       setError('Error de conexión al guardar evaluación');
       setSaving(false);
     }
   };
 
-  const renderStars = (section: 'lectura', field: 'fluidez' | 'precision', currentValue: number) => {
+  // Helper para obtener estado de validación visual
+  const getValidationState = (field: 'lecturaFluidez' | 'lecturaPrecision' | 'traduccionVocabulario', value: number) => {
+    const isTouched = validacionesTocadas[field];
+    const isEmpty = value === 0;
+    const showError = isTouched && isEmpty;
+    return { isTouched, isEmpty, showError };
+  };
+
+  const renderStars = (
+    section: 'lectura',
+    field: 'fluidez' | 'precision',
+    currentValue: number
+  ) => {
+    const validationKey = field === 'fluidez' ? 'lecturaFluidez' : 'lecturaPrecision';
+    const validation = getValidationState(validationKey, currentValue);
+
     return (
-      <div className="flex justify-between items-center gap-1 px-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            className="group p-1 focus:outline-none"
-            type="button"
-            onClick={() => handleStarClick(section, field, star)}
-            disabled={saving}
-          >
-            <span
-              className={`material-symbols-outlined text-[32px] transition-transform active:scale-90 ${
-                star <= currentValue ? 'text-[#fbbf24] fill-1' : 'text-slate-200'
-              } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+      <div>
+        <div className="flex justify-between items-center gap-1 px-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              className="group p-1 focus:outline-none"
+              type="button"
+              onClick={() => handleStarClick(section, field, star)}
             >
-              star
-            </span>
-          </button>
-        ))}
+              <span
+                className={`material-symbols-outlined text-[32px] transition-transform active:scale-90 ${
+                  star <= currentValue ? 'text-[#fbbf24] fill-1' : 'text-slate-200'
+                }`}
+              >
+                star
+              </span>
+            </button>
+          ))}
+        </div>
+        {validation.showError && (
+          <p className="text-xs text-red-500 mt-1 px-1">Este campo es requerido</p>
+        )}
       </div>
     );
   };
@@ -445,22 +328,10 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
 
       {/* Error Message */}
       {error && (
-        <div className="mx-5 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+        <div className="mx-5 mt-4 p-3 bg-[color:var(--color-alert-error-bg)] border border-[color:var(--color-alert-error-border)] rounded-lg">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-red-600 text-[18px]">error</span>
-            <p className="text-red-700 text-sm font-medium">{error}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Success Message */}
-      {success && (
-        <div className="mx-5 mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-green-600 text-[18px]">check_circle</span>
-            <p className="text-green-700 text-sm font-medium">
-              Evaluación guardada exitosamente. Redirigiendo...
-            </p>
+            <span className="material-symbols-outlined text-[color:var(--color-alert-error)] text-[18px]">error</span>
+            <p className="text-[color:var(--color-alert-error)] text-sm font-medium">{error}</p>
           </div>
         </div>
       )}
@@ -493,9 +364,15 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
         </div>
       </div>
 
-      <form className="px-5 space-y-5" onSubmit={handleSubmit}>
+      <form id="evaluacion-form" className="px-5 space-y-5" onSubmit={handleSubmit}>
         {/* Lectura */}
-        <div className="bg-white rounded-2xl p-5 shadow-paper border border-neutral-100">
+        <div
+          className={`bg-white rounded-2xl p-5 shadow-paper border transition-colors ${
+            validacion && !validacion.esValido && (validacionesTocadas.lecturaFluidez || validacionesTocadas.lecturaPrecision)
+              ? 'border-red-200'
+              : 'border-neutral-100'
+          }`}
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="bg-orange-50 p-2 rounded-lg">
@@ -511,7 +388,12 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
           </div>
           <div className="mb-5">
             <div className="flex justify-between items-end mb-2">
-              <label className="text-sm font-semibold text-slate-700">Fluidez</label>
+              <label className="text-sm font-semibold text-slate-700">
+                Fluidez
+                {getValidationState('lecturaFluidez', data.criterios.lectura.fluidez).showError && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
+              </label>
               <span className="text-xs font-medium text-primary">
                 {data.criterios.lectura.fluidez === 5
                   ? 'Excelente'
@@ -528,7 +410,12 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
           </div>
           <div>
             <div className="flex justify-between items-end mb-2">
-              <label className="text-sm font-semibold text-slate-700">Precisión (Dikduk)</label>
+              <label className="text-sm font-semibold text-slate-700">
+                Precisión (Dikduk)
+                {getValidationState('lecturaPrecision', data.criterios.lectura.precision).showError && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
+              </label>
               <span className="text-xs font-medium text-slate-400">
                 {data.criterios.lectura.precision > 0
                   ? data.criterios.lectura.precision === 5
@@ -579,7 +466,6 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
                 max="10"
                 value={data.criterios.logica.profundidadAnalisis}
                 onChange={(e) => handleSliderChange(Number(e.target.value))}
-                disabled={saving}
               />
               <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -translate-y-1/2 rounded-full pointer-events-none z-10"></div>
               <div
@@ -597,7 +483,13 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
         </div>
 
         {/* Traducción */}
-        <div className="bg-white rounded-2xl p-5 shadow-paper border border-neutral-100">
+        <div
+          className={`bg-white rounded-2xl p-5 shadow-paper border transition-colors ${
+            validacion && !validacion.esValido && validacionesTocadas.traduccionVocabulario
+              ? 'border-red-200'
+              : 'border-neutral-100'
+          }`}
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="bg-teal-50 p-2 rounded-lg">
@@ -612,6 +504,9 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
             <div className="col-span-5 mb-1">
               <label className="text-sm font-semibold text-slate-700 block mb-3">
                 Vocabulario Arameo
+                {getValidationState('traduccionVocabulario', data.criterios.traduccion.vocabularioArameo).showError && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
               </label>
               <div className="flex bg-slate-50 p-1 rounded-xl">
                 {[1, 2, 3, 4, 5].map((val) => (
@@ -619,17 +514,19 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
                     key={val}
                     type="button"
                     onClick={() => handleVocabularioClick(val)}
-                    disabled={saving}
                     className={`flex-1 py-2 text-xs font-semibold rounded-lg hover:bg-white hover:shadow-sm transition-all ${
                       data.criterios.traduccion.vocabularioArameo === val
                         ? 'text-primary bg-white shadow-sm ring-1 ring-black/5 font-bold'
                         : 'text-slate-500'
-                    } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    }`}
                   >
                     {val}
                   </button>
                 ))}
               </div>
+              {getValidationState('traduccionVocabulario', data.criterios.traduccion.vocabularioArameo).showError && (
+                <p className="text-xs text-red-500 mt-1">Este campo es requerido</p>
+              )}
             </div>
           </div>
         </div>
@@ -645,7 +542,6 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
             placeholder="Escribe observaciones clave aquí..."
             value={notasRapidas}
             onChange={(e) => setNotasRapidas(e.target.value)}
-            disabled={saving}
           ></textarea>
           <div className="flex gap-2 mt-3 overflow-x-auto pb-1 no-scrollbar">
             {data.notasRapidasSugeridas.map((nota, idx) => (
@@ -653,8 +549,7 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
                 key={idx}
                 type="button"
                 onClick={() => handleNotaRapidaClick(nota)}
-                disabled={saving}
-                className="shrink-0 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-lg transition-colors border border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="shrink-0 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-lg transition-colors border border-slate-200"
               >
                 {nota}
               </button>
@@ -666,19 +561,19 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
       {/* Bottom Action */}
       <div className="fixed bottom-0 w-full max-w-md mx-auto bg-white/90 backdrop-blur-md border-t border-slate-200 p-4 pb-6 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <button
-          onClick={handleSubmit}
-          disabled={saving || success}
-          className="w-full bg-primary hover:bg-primary-dark text-white font-bold text-lg h-14 rounded-xl shadow-lg shadow-primary/30 active:scale-[0.99] active:shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          type="submit"
+          form="evaluacion-form"
+          disabled={!isFormValid || saving}
+          className={`w-full text-white font-bold text-lg h-14 rounded-xl shadow-lg active:scale-[0.99] active:shadow-sm transition-all flex items-center justify-center gap-2 ${
+            isFormValid && !saving
+              ? 'bg-primary hover:bg-[color:var(--color-primary-dark)] shadow-primary/30'
+              : 'bg-[color:var(--color-border-medium)] cursor-not-allowed'
+          }`}
         >
           {saving ? (
             <>
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
               <span>Guardando...</span>
-            </>
-          ) : success ? (
-            <>
-              <span className="material-symbols-outlined text-[20px]">check_circle</span>
-              <span>Guardado</span>
             </>
           ) : (
             <>
@@ -687,6 +582,11 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
             </>
           )}
         </button>
+        {!isFormValid && validacion && validacion.errores.length > 0 && (
+          <p className="text-xs text-slate-500 text-center mt-2">
+            Completa todos los campos requeridos
+          </p>
+        )}
       </div>
     </div>
   );
