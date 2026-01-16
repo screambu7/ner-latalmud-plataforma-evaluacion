@@ -15,7 +15,8 @@
 
 import { requireRole, requireAnyRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { Rol, StatusAlumno, TipoAlumno, TipoReporte } from '@prisma/client';
+import { Rol, StatusAlumno, TipoAlumno, Prisma, TipoDiagnostico } from '@prisma/client';
+import type { TipoDiagnostico as TipoDiagnosticoRubrica } from '@/lib/rubricas';
 import type {
   EvaluadorDashboardDataV2,
   PerfilDiagnosticoData,
@@ -133,7 +134,7 @@ export async function getEvaluadorDashboard(): Promise<
     }
 
     // Construir filtro de scoping para alumnos
-    let alumnoWhere: any = {};
+    let alumnoWhere: Prisma.AlumnoWhereInput = {};
     if (usuarioCompleto.rol === Rol.EVALUADOR) {
       // EVALUADOR: solo alumnos de su escuela o alumnos independientes
       if (usuarioCompleto.escuelaId) {
@@ -187,11 +188,15 @@ export async function getEvaluadorDashboard(): Promise<
     );
 
     // Obtener total de alumnos asignados (según scoping)
+    // Se usará más adelante
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const totalAlumnosAsignados = await db.alumno.count({
       where: alumnoWhere,
     });
 
     // Obtener alumnos activos (según scoping)
+    // Se usará más adelante
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const alumnosActivos = await db.alumno.count({
       where: {
         ...alumnoWhere,
@@ -202,9 +207,7 @@ export async function getEvaluadorDashboard(): Promise<
     // Calcular estadísticas
     const stats = calcularStatsDashboard(
       evaluacionesPuras,
-      evaluaciones,
-      totalAlumnosAsignados,
-      alumnosActivos
+      evaluaciones
     );
 
     // Obtener actividad reciente
@@ -245,9 +248,7 @@ function calcularStatsDashboard(
   evaluacionesPrisma: Array<{
     fecha: Date;
     alumno: { id: number; nombre: string };
-  }>,
-  totalAlumnosAsignados: number,
-  alumnosActivos: number
+  }>
 ): DashboardStatsV2 {
   // Alumnos únicos evaluados
   const alumnosUnicos = new Set(evaluaciones.map((e) => e.alumnoId));
@@ -273,7 +274,7 @@ function calcularStatsDashboard(
   }
 
   // Contar alertas críticas
-  for (const [alumnoId, evaluacionesAlumno] of Array.from(
+  for (const [, evaluacionesAlumno] of Array.from(
     evaluacionesPorAlumno.entries()
   )) {
     const promedio = calcularPromedioGlobalAlumno(evaluacionesAlumno);
@@ -848,8 +849,7 @@ export async function getReporteProgreso(
     // 11. Generar resumen ejecutivo usando función existente
     const resumenEjecutivo = generarResumenEjecutivo(
       habilidadesClave,
-      promedioPorcentaje,
-      evaluacionesPuras
+      promedioPorcentaje
     );
 
     // 12. Obtener recomendación del Moré
@@ -961,7 +961,7 @@ export async function guardarReporteProgreso(
         tipo: 'PROGRESO_ALUMNO',
         alumnoId: alumnoId,
         generadoPorId: usuarioCompleto.id,
-        contenido: datosReporte as any, // Guardar como JSON
+        contenido: datosReporte as unknown as Prisma.InputJsonValue, // Guardar como JSON
         fechaInicio,
         fechaFin,
       },
@@ -1033,8 +1033,7 @@ function calcularProgresoSemestral(
  */
 function generarResumenEjecutivo(
   habilidades: RadarChartData,
-  promedioPorcentaje: number,
-  evaluaciones: EvaluacionCompleta[]
+  promedioPorcentaje: number
 ): string {
   // Analizar fortalezas y debilidades
   const habilidadesArray = [
@@ -1188,7 +1187,7 @@ export async function guardarEvaluacion(
       data: {
         alumnoId,
         evaluadorId: user.id,
-        tipo: tipo as any,
+        tipo: tipo as TipoDiagnostico,
         fecha: new Date(),
         detalles: {
           create: detalles.map((d) => ({
@@ -1384,7 +1383,7 @@ export async function guardarEvaluacionActiva(
         data: {
           alumnoId: alumnoIdNum,
           evaluadorId: usuarioCompleto.id,
-          tipo: payload.tipo as any, // Cast a TipoDiagnostico enum
+          tipo: payload.tipo as TipoDiagnostico, // Cast a TipoDiagnostico enum
           fecha: new Date(),
         },
       });
@@ -1458,7 +1457,7 @@ export async function getDatosEvaluacionActiva(
   }>
 > {
   try {
-    const user = await requireRole(Rol.EVALUADOR);
+    await requireRole(Rol.EVALUADOR);
 
     // Obtener alumno
     const alumno = await db.alumno.findUnique({
@@ -1482,7 +1481,7 @@ export async function getDatosEvaluacionActiva(
 
     // Obtener subhabilidades para este tipo
     const { getSubhabilidadesPorTipo } = await import('@/lib/rubricas');
-    const subhabilidades = getSubhabilidadesPorTipo(tipo as any);
+    const subhabilidades = getSubhabilidadesPorTipo(tipo as TipoDiagnosticoRubrica);
 
     return {
       success: true,
