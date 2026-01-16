@@ -70,6 +70,9 @@
   --color-alert-success: #f6aa1b;
   --color-alert-success-bg: #FFFBF0;
   --color-alert-success-border: #FFE8B8;
+  --color-alert-info: #000000;
+  --color-alert-info-bg: #F5F5F5;
+  --color-alert-info-border: #E0E0E0;
   
   /* ============================================
      TIPOGRAFÍA (Design System Canon)

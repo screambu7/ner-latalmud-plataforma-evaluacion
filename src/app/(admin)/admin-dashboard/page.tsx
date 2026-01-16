@@ -103,10 +103,10 @@ export default async function AdminDashboardPage() {
                   key={idx}
                   className={`p-4 rounded-lg border ${
                     alerta.severidad === 'alta'
-                      ? 'bg-red-50 border-red-200'
+                      ? 'bg-[color:var(--color-alert-error-bg)] border-[color:var(--color-alert-error-border)]'
                       : alerta.severidad === 'media'
-                        ? 'bg-yellow-50 border-yellow-200'
-                        : 'bg-blue-50 border-blue-200'
+                        ? 'bg-[color:var(--color-alert-warning-bg)] border-[color:var(--color-alert-warning-border)]'
+                        : 'bg-[color:var(--color-alert-info-bg)] border-[color:var(--color-alert-info-border)]'
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -117,10 +117,10 @@ export default async function AdminDashboardPage() {
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-bold ${
                         alerta.severidad === 'alta'
-                          ? 'bg-red-100 text-red-700'
+                          ? 'bg-[color:var(--color-alert-error-bg)] text-[color:var(--color-alert-error)]'
                           : alerta.severidad === 'media'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-blue-100 text-blue-700'
+                            ? 'bg-[color:var(--color-alert-warning-bg)] text-[color:var(--color-alert-warning)]'
+                            : 'bg-[color:var(--color-alert-info-bg)] text-[color:var(--color-alert-info)]'
                       }`}
                     >
                       {alerta.cantidad}

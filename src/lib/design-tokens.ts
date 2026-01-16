@@ -56,7 +56,7 @@ export const designTokens = {
     borderMedium: '#CCCCCC',
     borderDark: '#999999',
     
-    // Colores de alerta (variantes de error/warning)
+    // Colores de alerta (variantes de error/warning/info)
     alertError: '#ed6738',
     alertErrorBg: '#FFF4F0',
     alertErrorBorder: '#FFD4C4',
@@ -66,6 +66,9 @@ export const designTokens = {
     alertSuccess: '#f6aa1b',
     alertSuccessBg: '#FFFBF0',
     alertSuccessBorder: '#FFE8B8',
+    alertInfo: '#000000',
+    alertInfoBg: '#F5F5F5',
+    alertInfoBorder: '#E0E0E0',
   },
 
   // ============================================
