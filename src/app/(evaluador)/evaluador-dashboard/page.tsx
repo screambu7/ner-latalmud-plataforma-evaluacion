@@ -10,7 +10,6 @@ import { AgendaItem } from '@/components/evaluador-dashboard/AgendaItem';
 import { Calendar } from '@/components/evaluador-dashboard/Calendar';
 import { BottomNavigation } from '@/components/evaluador-dashboard/BottomNavigation';
 import { SuperAdminHelpers } from '@/components/admin/SuperAdminHelpers';
-import { getCurrentUser } from '@/lib/auth';
 
 export default async function EvaluadorDashboardPage() {
   // SUPER_ADMIN puede acceder para testing/auditoría
