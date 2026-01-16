@@ -33,6 +33,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !env.example
+.env*.local
 
 # vercel
 .vercel
@@ -40,4 +41,30 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-.env*.local
+
+# Python virtual environments
+venv/
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+logs/
+storage/logs/
+
+# Backups and temporary files
+*_backup
+*_backups
+archive/
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
