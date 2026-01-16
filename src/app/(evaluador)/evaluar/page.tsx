@@ -38,7 +38,7 @@ export default function EvaluarPage() {
       }
       const data = await response.json();
       setAlumnos(data.alumnos || []);
-    } catch (err) {
+    } catch {
       setError('Error al cargar alumnos');
     } finally {
       setLoading(false);
@@ -52,18 +52,21 @@ export default function EvaluarPage() {
 
   // Inicializar niveles cuando cambia el tipo
   useEffect(() => {
-    if (tipo && subhabilidadesAplicables.length > 0) {
-      const nuevosNiveles: Record<string, Nivel> = {};
-      subhabilidadesAplicables.forEach((sub) => {
-        if (!(sub.key in niveles)) {
-          nuevosNiveles[sub.key] = 1;
-        } else {
-          nuevosNiveles[sub.key] = niveles[sub.key];
-        }
-      });
-      setNiveles(nuevosNiveles);
+    if (tipo) {
+      const subhabilidadesAplicables = getSubhabilidadesPorTipo(tipo);
+      if (subhabilidadesAplicables.length > 0) {
+        const nuevosNiveles: Record<string, Nivel> = {};
+        subhabilidadesAplicables.forEach((sub) => {
+          if (!(sub.key in niveles)) {
+            nuevosNiveles[sub.key] = 1;
+          } else {
+            nuevosNiveles[sub.key] = niveles[sub.key];
+          }
+        });
+        setNiveles(nuevosNiveles);
+      }
     }
-  }, [tipo]);
+  }, [tipo, niveles]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +105,7 @@ export default function EvaluarPage() {
       }
 
       router.push('/evaluador-dashboard');
-    } catch (err) {
+    } catch {
       setError('Error de conexión');
       setSaving(false);
     }
@@ -122,7 +125,7 @@ export default function EvaluarPage() {
       <h1 className="text-2xl font-bold mb-6">Nueva Evaluación</h1>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">
+        <div className="mb-4 p-3 bg-[color:var(--color-alert-error-bg)] text-[color:var(--color-alert-error)] rounded-md">
           {error}
         </div>
       )}
@@ -137,7 +140,7 @@ export default function EvaluarPage() {
             value={alumnoId}
             onChange={(e) => setAlumnoId(e.target.value ? Number(e.target.value) : '')}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            className="w-full px-3 py-2 border border-[color:var(--color-border-light)] rounded-md focus:ring-2 focus:ring-[color:var(--color-primary)]/20 focus:border-[color:var(--color-primary)]"
           >
             <option value="">Seleccione un alumno</option>
             {alumnos.map((alumno) => (
@@ -157,7 +160,7 @@ export default function EvaluarPage() {
             value={tipo}
             onChange={(e) => setTipo(e.target.value as TipoDiagnostico | '')}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            className="w-full px-3 py-2 border border-[color:var(--color-border-light)] rounded-md focus:ring-2 focus:ring-[color:var(--color-primary)]/20 focus:border-[color:var(--color-primary)]"
           >
             <option value="">Seleccione un tipo</option>
             <optgroup label="GV - Fácil">
@@ -196,7 +199,7 @@ export default function EvaluarPage() {
             type="text"
             value={temaTalmudico}
             onChange={(e) => setTemaTalmudico(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            className="w-full px-3 py-2 border border-[color:var(--color-border-light)] rounded-md focus:ring-2 focus:ring-[color:var(--color-primary)]/20 focus:border-[color:var(--color-primary)]"
             placeholder="Tema talmúdico evaluado"
           />
         </div>
@@ -206,7 +209,7 @@ export default function EvaluarPage() {
             <h2 className="text-lg font-semibold mb-4">Rúbrica</h2>
             <div className="space-y-4">
               {subhabilidadesAplicables.map((sub) => (
-                <div key={sub.key} className="border border-gray-300 rounded-md p-4">
+                <div key={sub.key} className="border border-[color:var(--color-border-light)] rounded-md p-4">
                   <label className="block text-sm font-medium mb-2">
                     {sub.label}
                   </label>
@@ -234,7 +237,7 @@ export default function EvaluarPage() {
         )}
 
         {tipo && subhabilidadesAplicables.length === 0 && (
-          <div className="p-3 bg-yellow-100 text-yellow-800 rounded-md">
+          <div className="p-3 bg-[color:var(--color-alert-warning-bg)] text-[color:var(--color-alert-warning)] rounded-md">
             No hay subhabilidades configuradas para este tipo de diagnóstico.
           </div>
         )}
@@ -243,14 +246,14 @@ export default function EvaluarPage() {
           <button
             type="submit"
             disabled={saving || !alumnoId || !tipo}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 bg-[color:var(--color-primary)] text-[color:var(--color-text-inverse)] rounded-md hover:opacity-90 disabled:opacity-50"
           >
             {saving ? 'Guardando...' : 'Guardar Evaluación'}
           </button>
           <button
             type="button"
             onClick={() => router.push('/evaluador-dashboard')}
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
+            className="px-4 py-2 bg-[color:var(--color-background-light)] text-[color:var(--color-text-secondary)] rounded-md hover:bg-[color:var(--color-border-light)]"
           >
             Cancelar
           </button>

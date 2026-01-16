@@ -8,7 +8,6 @@ import type { EvaluacionActivaData } from '@/lib/types/evaluador-dtos';
 import {
   prepararPayload,
   validarCriterios,
-  type CriteriosEvaluacion,
   type EvaluacionPayload,
 } from '@/lib/utils/evaluacion-payload';
 
@@ -84,7 +83,7 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
             '+ Excelente lógica',
           ],
         });
-      } catch (err) {
+      } catch {
         setError('Error al cargar datos de evaluación');
       } finally {
         setLoading(false);
@@ -261,7 +260,7 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
           ))}
         </div>
         {validation.showError && (
-          <p className="text-xs text-red-500 mt-1 px-1">Este campo es requerido</p>
+          <p className="text-xs text-[color:var(--color-alert-error)] mt-1 px-1">Este campo es requerido</p>
         )}
       </div>
     );
@@ -285,8 +284,8 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
       <div className="relative flex h-full min-h-screen w-full flex-col max-w-md mx-auto bg-paper shadow-2xl overflow-x-hidden border-x border-neutral-100/50">
         <div className="flex items-center justify-center h-screen px-5">
           <div className="text-center">
-            <span className="material-symbols-outlined text-red-500 text-5xl mb-4 block">error</span>
-            <p className="text-red-600 font-semibold mb-2">Error</p>
+            <span className="material-symbols-outlined text-[color:var(--color-alert-error)] text-5xl mb-4 block">error</span>
+            <p className="text-[color:var(--color-alert-error)] font-semibold mb-2">Error</p>
             <p className="text-slate-600 text-sm">{error}</p>
             <button
               onClick={() => router.back()}
@@ -344,8 +343,8 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
               className="size-16 rounded-full bg-cover bg-center border-2 border-white shadow-md"
               style={{ backgroundImage: `url("${data.alumno.avatarUrl}")` }}
             ></div>
-            <div className="absolute -bottom-1 -right-1 bg-green-100 border border-white p-1 rounded-full">
-              <span className="material-symbols-outlined text-green-600 text-[14px] block font-bold">
+            <div className="absolute -bottom-1 -right-1 bg-[color:var(--color-alert-success-bg)] border border-white p-1 rounded-full">
+              <span className="material-symbols-outlined text-[color:var(--color-alert-success)] text-[14px] block font-bold">
                 check
               </span>
             </div>
@@ -353,7 +352,7 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
           <div className="flex-1 min-w-0">
             <h1 className="text-[#0f0d1b] text-lg font-bold truncate">{data.alumno.nombre}</h1>
             <div className="flex items-center gap-1.5 mt-1 text-sm text-slate-500">
-              <span className="bg-blue-50 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+              <span className="bg-[color:var(--color-alert-info-bg)] text-primary px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                 {data.alumno.grupo}
               </span>
               <span className="truncate">
@@ -369,7 +368,7 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
         <div
           className={`bg-white rounded-2xl p-5 shadow-paper border transition-colors ${
             validacion && !validacion.esValido && (validacionesTocadas.lecturaFluidez || validacionesTocadas.lecturaPrecision)
-              ? 'border-red-200'
+              ? 'border-[color:var(--color-alert-error-border)]'
               : 'border-neutral-100'
           }`}
         >
@@ -391,7 +390,7 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
               <label className="text-sm font-semibold text-slate-700">
                 Fluidez
                 {getValidationState('lecturaFluidez', data.criterios.lectura.fluidez).showError && (
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-[color:var(--color-alert-error)] ml-1">*</span>
                 )}
               </label>
               <span className="text-xs font-medium text-primary">
@@ -413,7 +412,7 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
               <label className="text-sm font-semibold text-slate-700">
                 Precisión (Dikduk)
                 {getValidationState('lecturaPrecision', data.criterios.lectura.precision).showError && (
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-[color:var(--color-alert-error)] ml-1">*</span>
                 )}
               </label>
               <span className="text-xs font-medium text-slate-400">
@@ -486,7 +485,7 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
         <div
           className={`bg-white rounded-2xl p-5 shadow-paper border transition-colors ${
             validacion && !validacion.esValido && validacionesTocadas.traduccionVocabulario
-              ? 'border-red-200'
+              ? 'border-[color:var(--color-alert-error-border)]'
               : 'border-neutral-100'
           }`}
         >
@@ -505,7 +504,7 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
               <label className="text-sm font-semibold text-slate-700 block mb-3">
                 Vocabulario Arameo
                 {getValidationState('traduccionVocabulario', data.criterios.traduccion.vocabularioArameo).showError && (
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-[color:var(--color-alert-error)] ml-1">*</span>
                 )}
               </label>
               <div className="flex bg-slate-50 p-1 rounded-xl">
@@ -525,7 +524,7 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
                 ))}
               </div>
               {getValidationState('traduccionVocabulario', data.criterios.traduccion.vocabularioArameo).showError && (
-                <p className="text-xs text-red-500 mt-1">Este campo es requerido</p>
+                <p className="text-xs text-[color:var(--color-alert-error)] mt-1">Este campo es requerido</p>
               )}
             </div>
           </div>
