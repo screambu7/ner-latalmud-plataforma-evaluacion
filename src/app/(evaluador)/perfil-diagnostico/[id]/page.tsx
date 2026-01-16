@@ -5,6 +5,7 @@ import { Rol } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { PerfilDiagnosticoView } from '@/components/perfil-diagnostico/PerfilDiagnosticoView';
 import { calcularCoordenadasRadar, generarRadarPath } from '@/lib/utils/radar-chart';
+import { SuperAdminHelpers } from '@/components/admin/SuperAdminHelpers';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -68,12 +69,26 @@ export default async function PerfilDiagnosticoPage({ params }: PageProps) {
 
   // 7. Renderizar componente con datos procesados
   return (
-    <PerfilDiagnosticoView
-      data={data}
-      radarCoordinates={radarCoordinates}
-      radarPath={radarPath}
-      isLoading={false}
-      error={null}
-    />
+    <>
+      {/* Super Admin Helpers - Solo visible para SUPER_ADMIN */}
+      {user.rol === Rol.SUPER_ADMIN && (
+        <div className="px-4 pt-4 pb-2">
+          <SuperAdminHelpers
+            userRol={user.rol}
+            currentAlumnoId={alumnoId}
+            showBadge={true}
+            showSelector={true}
+            showQuickLinks={true}
+          />
+        </div>
+      )}
+      <PerfilDiagnosticoView
+        data={data}
+        radarCoordinates={radarCoordinates}
+        radarPath={radarPath}
+        isLoading={false}
+        error={null}
+      />
+    </>
   );
 }

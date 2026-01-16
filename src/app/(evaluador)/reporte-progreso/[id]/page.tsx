@@ -6,6 +6,7 @@ import { getReporteProgreso, guardarReporteProgreso } from '@/app/actions/evalua
 import { ReporteProgresoView } from '@/components/reporte-progreso/ReporteProgresoView';
 import { calcularCoordenadasRadar, generarRadarPath } from '@/lib/utils/radar-chart';
 import DescargarPDFButton from './DescargarPDFButton';
+import { SuperAdminHelpers } from '@/components/admin/SuperAdminHelpers';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -69,6 +70,18 @@ export default async function ReporteProgresoPage({ params }: PageProps) {
   // 7. Renderizar componente con datos procesados
   return (
     <div className="relative">
+      {/* Super Admin Helpers - Solo visible para SUPER_ADMIN */}
+      {user.rol === Rol.SUPER_ADMIN && (
+        <div className="px-4 pt-4 pb-2">
+          <SuperAdminHelpers
+            userRol={user.rol}
+            currentAlumnoId={alumnoId}
+            showBadge={true}
+            showSelector={true}
+            showQuickLinks={true}
+          />
+        </div>
+      )}
       <ReporteProgresoView
         data={data}
         radarCoordinates={radarCoordinates}

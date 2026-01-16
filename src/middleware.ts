@@ -72,15 +72,20 @@ export async function middleware(request: NextRequest) {
   }
 
   // Proteger rutas de evaluador
+  // SUPER_ADMIN puede acceder a todas las rutas de evaluador para testing/auditoría
   if (request.nextUrl.pathname.startsWith('/evaluador-dashboard') ||
       request.nextUrl.pathname.startsWith('/mis-alumnos') ||
-      request.nextUrl.pathname.startsWith('/evaluar')) {
+      request.nextUrl.pathname.startsWith('/evaluar') ||
+      request.nextUrl.pathname.startsWith('/perfil-diagnostico') ||
+      request.nextUrl.pathname.startsWith('/reporte-progreso') ||
+      request.nextUrl.pathname.startsWith('/centro-reportes')) {
     
     if (!session) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    if (session.rol !== Rol.EVALUADOR) {
+    // Permitir EVALUADOR y SUPER_ADMIN
+    if (session.rol !== Rol.EVALUADOR && session.rol !== Rol.SUPER_ADMIN) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
@@ -106,6 +111,9 @@ export const config = {
     '/evaluador-dashboard',
     '/mis-alumnos/:path*',
     '/evaluar/:path*',
+    '/perfil-diagnostico/:path*',
+    '/reporte-progreso/:path*',
+    '/centro-reportes/:path*',
   ],
 };
 

@@ -10,6 +10,7 @@ import {
   validarCriterios,
   type EvaluacionPayload,
 } from '@/lib/utils/evaluacion-payload';
+import { SuperAdminHelpersWrapper } from '@/components/admin/SuperAdminHelpersWrapper';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -332,6 +333,13 @@ export default function EvaluacionActivaPage({ params }: PageProps) {
             <span className="material-symbols-outlined text-[color:var(--color-alert-error)] text-[18px]">error</span>
             <p className="text-[color:var(--color-alert-error)] text-sm font-medium">{error}</p>
           </div>
+        </div>
+      )}
+
+      {/* Super Admin Helpers */}
+      {alumnoId && (
+        <div className="mx-5 mt-4">
+          <SuperAdminHelpersWrapper currentAlumnoId={alumnoId} />
         </div>
       )}
 

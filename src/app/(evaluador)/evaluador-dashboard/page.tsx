@@ -1,6 +1,6 @@
 import type { EvaluadorDashboardDataV2 } from '@/lib/types/evaluador-dtos';
 import { getEvaluadorDashboard } from '@/app/actions/evaluador';
-import { protectPage } from '@/lib/page-protection';
+import { protectPageWithAnyRole } from '@/lib/page-protection';
 import { Rol } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/evaluador-dashboard/AppShell';
@@ -9,9 +9,12 @@ import { StatCard } from '@/components/evaluador-dashboard/StatCard';
 import { AgendaItem } from '@/components/evaluador-dashboard/AgendaItem';
 import { Calendar } from '@/components/evaluador-dashboard/Calendar';
 import { BottomNavigation } from '@/components/evaluador-dashboard/BottomNavigation';
+import { SuperAdminHelpers } from '@/components/admin/SuperAdminHelpers';
+import { getCurrentUser } from '@/lib/auth';
 
 export default async function EvaluadorDashboardPage() {
-  await protectPage(Rol.EVALUADOR);
+  // SUPER_ADMIN puede acceder para testing/auditoría
+  const user = await protectPageWithAnyRole([Rol.EVALUADOR, Rol.SUPER_ADMIN]);
   
   // Obtener datos reales del dashboard
   const result = await getEvaluadorDashboard();
@@ -66,6 +69,17 @@ export default async function EvaluadorDashboardPage() {
   return (
     <AppShell>
       <div>
+        {/* Super Admin Helpers - Solo visible para SUPER_ADMIN */}
+        {user.rol === Rol.SUPER_ADMIN && (
+          <div className="px-4 pt-4 pb-2">
+            <SuperAdminHelpers
+              userRol={user.rol}
+              showBadge={true}
+              showSelector={true}
+              showQuickLinks={false}
+            />
+          </div>
+        )}
         {/* Header */}
         <Header avatarUrl={data.evaluador.avatarUrl} title="Dashboard" />
 
