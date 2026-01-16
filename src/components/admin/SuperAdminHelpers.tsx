@@ -36,8 +36,8 @@ export function SuperAdminHelpers({
   const router = useRouter();
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedAlumnoId, setSelectedAlumnoId] = useState<number | ''>(
-    currentAlumnoId || ''
+  const [selectedAlumnoId, setSelectedAlumnoId] = useState<number | null>(
+    currentAlumnoId || null
   );
 
   // Cargar lista de alumnos (solo si es SUPER_ADMIN)
@@ -78,7 +78,7 @@ export function SuperAdminHelpers({
   };
 
   const handleQuickLink = (action: 'perfil' | 'evaluar' | 'reporte') => {
-    if (!selectedAlumnoId || selectedAlumnoId === '') {
+    if (!selectedAlumnoId) {
       return;
     }
 
@@ -110,13 +110,13 @@ export function SuperAdminHelpers({
             Selección Rápida (Admin)
           </label>
           <select
-            value={selectedAlumnoId}
+            value={selectedAlumnoId || ''}
             onChange={(e) => {
               const value = e.target.value;
               if (value) {
                 handleAlumnoSelect(Number(value));
               } else {
-                setSelectedAlumnoId('');
+                setSelectedAlumnoId(null);
               }
             }}
             className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
@@ -133,7 +133,7 @@ export function SuperAdminHelpers({
       )}
 
       {/* Links rápidos */}
-      {showQuickLinks && selectedAlumnoId && selectedAlumnoId !== '' && (
+      {showQuickLinks && selectedAlumnoId && (
         <div className="px-4 flex gap-2 flex-wrap">
           <button
             onClick={() => handleQuickLink('perfil')}
