@@ -1,0 +1,140 @@
+# 🔐 Reglas de Autenticación - Ner LaTalmud
+
+**Prioridad máxima. Estas reglas prevalecen sobre cualquier otra si hay conflicto.**
+
+⸻
+
+## 🎯 Estado Oficial del Sistema de Autenticación
+
+### ✅ MÉTODO ACTIVO (ÚNICO)
+- **Autenticación por contraseña** (password-based)
+- Hash con bcrypt
+- Sesión mediante cookie httpOnly firmada
+
+### ❌ MÉTODOS CONGELADOS
+- Magic Link
+- Email-only login
+- Invite-links sin password
+- Auto-login por token
+
+**Regla absoluta:**
+
+Magic Link está congelado y NO debe usarse, ampliarse ni reactivarse.
+
+⸻
+
+## 🚫 PROHIBICIONES ABSOLUTAS (NO NEGOCIABLES)
+
+### ❌ Magic Link
+- No crear endpoints nuevos relacionados
+- No modificar endpoints congelados
+- No referenciar Magic Link en mensajes, logs o UI
+- No crear usuarios sin passwordHash
+
+### ❌ Usuarios sin contraseña
+- **PROHIBIDO** crear usuarios sin passwordHash
+- **PROHIBIDO** flows donde el usuario "después define su contraseña" sin autenticación
+- **PROHIBIDO** signup que no incluya password
+
+### ❌ Logging sensible
+- **PROHIBIDO** loggear:
+  - DATABASE_URL
+  - tokens
+  - cookies
+  - hashes
+  - secretos
+- Logs deben ser estructurales, nunca secretos
+
+### ❌ Endpoints inseguros
+- **PROHIBIDO** cualquier endpoint de:
+  - set-password
+  - reset-password
+  - invite
+- Si NO tiene:
+  - autenticación válida
+  - autorización explícita
+  - validación de ownership o rol
+
+⸻
+
+## ✅ REGLAS OBLIGATORIAS DE AUTH
+
+### 🔑 Signup
+- Siempre crea usuario con:
+  - passwordHash (bcrypt)
+  - estado = ACTIVO
+- No genera links
+- No envía correos
+- No auto-login
+
+### 🔐 Login
+- Solo password
+- bcrypt.compare obligatorio
+- Errores genéricos (no revelar si el correo existe)
+
+### 🔒 Sesión
+- Cookie:
+  - httpOnly
+  - secure en prod
+  - sameSite=lax
+  - expiración clara
+- Logout debe borrar cookie (maxAge=0)
+
+⸻
+
+## 🧱 Middleware & Protección
+- Middleware NO accede a Prisma
+- Middleware SOLO valida sesión
+- Autorización fina:
+  - En páginas
+  - En server actions
+
+⸻
+
+## 🧠 Mensajes de Error (UX segura)
+- Nunca revelar:
+  - si el usuario existe
+  - si el password está mal
+- Mensaje estándar:
+  - "Correo o contraseña incorrectos"
+
+⸻
+
+## 🛑 Cambios Prohibidos sin Aprobación Explícita
+
+Cursor NO DEBE:
+- Cambiar el flujo de auth
+- Introducir nuevos métodos de login
+- "Mejorar" seguridad inventando flows
+- Reactivar Magic Link "temporalmente"
+
+⸻
+
+## 🔁 Flujo Permitido para Cambios de Auth
+1. Documentar el cambio en `docs/00_OVERVIEW/GOVERNANCE.md`
+2. Justificar riesgo
+3. Aprobar explícitamente (CTO/Owner)
+4. Actualizar rules
+5. Implementar
+6. Auditar
+7. Deploy
+
+Si falta cualquiera, el cambio NO se hace.
+
+⸻
+
+## 🧪 Testing Obligatorio (Auth)
+
+Toda modificación en auth requiere:
+- Login correcto
+- Login incorrecto
+- Logout
+- Hard reload
+- Acceso bloqueado sin sesión
+- Acceso bloqueado por rol
+
+⸻
+
+**Última actualización:** hoy  
+**Estado:** ACTIVO  
+**Scope:** Backend, Auth, Security, Infra

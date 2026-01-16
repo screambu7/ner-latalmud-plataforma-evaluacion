@@ -96,11 +96,12 @@ export async function POST(request: Request) {
       }
     } else {
       // Usuario sin passwordHash - no puede autenticarse con contraseña
+      // B2-2: Retornar 403 (Forbidden) en lugar de 401 (Unauthorized)
       return NextResponse.json(
         { 
-          error: 'Este usuario no tiene contraseña configurada. Contacta al administrador para configurar una contraseña.',
+          error: 'Cuenta no habilitada. Contacta al administrador.',
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 

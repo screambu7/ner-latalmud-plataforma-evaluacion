@@ -232,13 +232,13 @@ function generarHTMLReporte(data: ReporteProgresoData): string {
       background-color: #ffffff;
     }
     .text-primary {
-      color: #2111d4;
+      color: #000000;
     }
     .bg-primary {
-      background-color: #2111d4;
+      background-color: #000000;
     }
     .border-primary {
-      border-color: #2111d4;
+      border-color: #000000;
     }
     .shadow-paper {
       box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
@@ -353,8 +353,8 @@ function generarHTMLReporte(data: ReporteProgresoData): string {
             <!-- Area Gradient -->
             <defs>
               <linearGradient id="gradientArea" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="#2111d4" stop-opacity="0.2"></stop>
-                <stop offset="100%" stop-color="#2111d4" stop-opacity="0"></stop>
+                <stop offset="0%" stop-color="#000000" stop-opacity="0.2"></stop>
+                <stop offset="100%" stop-color="#000000" stop-opacity="0"></stop>
               </linearGradient>
             </defs>
             <path d="${progresoAreaPath}" fill="url(#gradientArea)"></path>

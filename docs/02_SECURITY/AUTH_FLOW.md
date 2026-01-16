@@ -1,32 +1,22 @@
-# 🔐 Estado Actual del Sistema de Autenticación
+# 🔐 Flujo de Autenticación - Ner LaTalmud
+
+> **⚠️ REFERENCIA PRINCIPAL:** Ver `.cursorrules-auth` para reglas completas y actualizadas.
 
 ## 📋 Resumen
 
-El sistema ahora soporta **DOS métodos de autenticación**:
+El sistema utiliza **Password Auth** como único método de autenticación activo.
 
-1. **Magic Link** (PR1) - Sistema principal
-2. **Login con Contraseña** - Sistema restaurado para UX tradicional
+**⚠️ IMPORTANTE**: 
+- ❌ **Magic Link**: ELIMINADO - Código movido a `__deprecated__`, funciones lanzan errores
+- ❌ **Signup público**: NO EXISTE - Sistema es admin-provisioned únicamente
+- ❌ **Recovery por email**: NO EXISTE - Usuarios deben contactar al administrador
+- ✅ **Password obligatorio**: Todo usuario DEBE tener passwordHash desde su creación
 
 ---
 
-## 🎯 Métodos de Autenticación Disponibles
+## 🎯 Método de Autenticación Activo
 
-### 1. Magic Link (PR1) - Sistema Principal
-
-**Endpoint**: `POST /api/auth/request-link`
-
-**Flujo**:
-```
-Usuario ingresa correo → Sistema genera magic link → Usuario hace click → Sesión JWT
-```
-
-**Características**:
-- Sin contraseña
-- Link temporal (15 minutos)
-- Usuario se crea automáticamente al validar link
-- Más seguro (no hay contraseñas que comprometer)
-
-### 2. Login con Contraseña - Sistema Restaurado
+### Password Auth (Único método activo)
 
 **Endpoint**: `POST /api/auth/login`
 
@@ -37,9 +27,31 @@ Usuario ingresa correo + contraseña → Validación → Sesión JWT
 
 **Características**:
 - Requiere contraseña (passwordHash en BD)
-- Usuario debe existir previamente
-- Compatible con signup y forgot-password
+- Usuario debe existir previamente (creado por SUPER_ADMIN)
+- Sistema admin-provisioned (no existe signup público)
+- No existe recovery por email
 - UX tradicional
+- Sesiones JWT firmadas (httpOnly cookies)
+- Expiración: 7 días
+
+### ❌ Métodos Eliminados
+
+**Magic Link**: ❌ **ELIMINADO** - No usar, ampliar ni reactivar
+- Código movido a `src/__deprecated__/magic-link.ts`
+- Funciones lanzan errores explícitos si se intentan usar
+- Endpoint `/api/auth/request-link` retorna 410 Gone
+- Endpoint `/api/auth/callback` retorna 410 Gone
+- Endpoint `/api/auth/forgot` retorna 410 Gone
+- Cualquier reactivación requiere aprobación explícita (CTO/Owner)
+
+**Signup Público**: ❌ **NO EXISTE**
+- Endpoint `/api/auth/signup` retorna 410 Gone
+- Sistema es admin-provisioned únicamente
+- Usuarios creados por SUPER_ADMIN con password obligatorio
+
+**Recovery por Email**: ❌ **NO EXISTE**
+- Endpoint `/api/auth/forgot-password` retorna 410 Gone
+- Usuarios deben contactar al administrador
 
 ---
 
@@ -47,39 +59,29 @@ Usuario ingresa correo + contraseña → Validación → Sesión JWT
 
 ### `/login` - Página de Login
 
-**Diseño Restaurado**:
+**Diseño**:
 - ✅ Campo de correo electrónico
 - ✅ Campo de contraseña (con botón mostrar/ocultar)
-- ✅ Link "¿Olvidaste tu contraseña?" → `/forgot-password`
-- ✅ Link "Crear cuenta" → `/signup`
-- ✅ Mensaje de éxito si viene de signup
+- ✅ Mensaje: "El acceso es proporcionado por el administrador"
 - ✅ Manejo de errores
+- ❌ NO incluye links a signup o forgot-password (no existen)
 
 **Endpoints que usa**:
 - `POST /api/auth/login` - Login con contraseña
 
 ### `/signup` - Página de Registro
 
-**Diseño**:
-- ✅ Campo nombre completo
-- ✅ Campo correo electrónico
-- ✅ Campo contraseña (con mostrar/ocultar)
-- ✅ Campo confirmar contraseña (con mostrar/ocultar)
-- ✅ Validaciones (mínimo 6 caracteres, coincidencia)
-- ✅ Link "Iniciar sesión" → `/login`
-
-**Endpoints que usa**:
-- `POST /api/auth/signup` - Crear cuenta con contraseña
+**Estado**: ❌ **NO EXISTE**
+- Endpoint `/api/auth/signup` retorna 410 Gone
+- Sistema es admin-provisioned únicamente
+- Usuarios creados por SUPER_ADMIN
 
 ### `/forgot-password` - Recuperación de Contraseña
 
-**Diseño**:
-- ✅ Campo correo electrónico
-- ✅ Mensaje de éxito (siempre muestra éxito por seguridad)
-- ✅ Link "Volver al inicio de sesión" → `/login`
-
-**Endpoints que usa**:
-- `POST /api/auth/forgot-password` - Solicitar reset
+**Estado**: ❌ **NO EXISTE** (endpoint deshabilitado)
+- Endpoint `/api/auth/forgot-password` retorna 410 Gone
+- Usuarios deben contactar al administrador
+- Página muestra mensaje informativo
 
 ---
 
@@ -115,26 +117,18 @@ Usuario ingresa correo + contraseña → Validación → Sesión JWT
 - `403`: Cuenta inactiva
 - `500`: Error del servidor
 
-### POST `/api/auth/signup` (Existente)
+### POST `/api/auth/signup` (Deshabilitado)
 
-**Request**:
+**Estado**: ❌ **NO EXISTE** - Retorna 410 Gone
+
+**Response (410)**:
 ```json
 {
-  "nombre": "Usuario Nuevo",
-  "correo": "nuevo@ejemplo.com",
-  "password": "contraseña123"
+  "error": "Registro público deshabilitado. Contacta al administrador."
 }
 ```
 
-**Response (200)**:
-```json
-{
-  "success": true,
-  "message": "Cuenta creada exitosamente"
-}
-```
-
-### POST `/api/auth/request-link` (PR1 - Magic Link)
+### POST `/api/auth/request-link` (Eliminado - Magic Link)
 
 **Request**:
 ```json
@@ -151,20 +145,14 @@ Usuario ingresa correo + contraseña → Validación → Sesión JWT
 }
 ```
 
-### POST `/api/auth/forgot-password` (Existente)
+### POST `/api/auth/forgot-password` (Deshabilitado)
 
-**Request**:
+**Estado**: ❌ **NO EXISTE** - Retorna 410 Gone
+
+**Response (410)**:
 ```json
 {
-  "correo": "usuario@ejemplo.com"
-}
-```
-
-**Response (200)**:
-```json
-{
-  "success": true,
-  "message": "Si el correo está registrado, recibirás instrucciones..."
+  "error": "Recuperación de contraseña deshabilitada. Contacta al administrador."
 }
 ```
 
@@ -172,16 +160,7 @@ Usuario ingresa correo + contraseña → Validación → Sesión JWT
 
 ## 🔄 Flujo de Usuario
 
-### Opción 1: Magic Link (PR1)
-
-1. Usuario va a `/login`
-2. Ingresa correo
-3. Hace click en "Enviar Link de Acceso" (si se implementa botón alternativo)
-4. Recibe magic link por email/consola
-5. Hace click en link
-6. Redirige a dashboard según rol
-
-### Opción 2: Login con Contraseña (Restaurado)
+### Login con Contraseña (Único método activo)
 
 1. Usuario va a `/login`
 2. Ingresa correo y contraseña
@@ -189,24 +168,19 @@ Usuario ingresa correo + contraseña → Validación → Sesión JWT
 4. Sistema valida credenciales
 5. Redirige a dashboard según rol
 
-### Opción 3: Sign Up → Login
+### Provisioning de Usuarios (Admin)
 
-1. Usuario va a `/signup`
-2. Completa formulario (nombre, correo, contraseña, confirmar)
-3. Hace click en "Crear cuenta"
-4. Redirige a `/login?registered=true`
-5. Login muestra mensaje de éxito
-6. Usuario inicia sesión con sus credenciales
+1. SUPER_ADMIN crea usuario desde `/admin-dashboard/usuarios`
+2. Ingresa: nombre, correo, password (obligatorio), rol, escuela (opcional)
+3. Sistema valida password usando `password-policy.ts`:
+   - ≥8 caracteres
+   - Al menos 1 letra
+   - Al menos 1 número
+4. Sistema hashea password con bcrypt
+5. Sistema crea usuario con passwordHash y estado = ACTIVO
+6. Usuario puede iniciar sesión con sus credenciales
 
-### Opción 4: Forgot Password
-
-1. Usuario va a `/forgot-password`
-2. Ingresa correo
-3. Hace click en "Enviar enlace de recuperación"
-4. ⚠️ **TODO**: Recibe email con link de reset
-5. ⚠️ **TODO**: Hace click en link → `/reset-password/[token]`
-6. ⚠️ **TODO**: Ingresa nueva contraseña
-7. Redirige a `/login`
+**INVARIANTE**: Todo usuario DEBE tener passwordHash desde su creación.
 
 ---
 
@@ -222,8 +196,9 @@ model Usuario {
 ```
 
 **Comportamiento**:
-- Si `passwordHash` existe → Usuario puede hacer login con contraseña
-- Si `passwordHash` es `null` → Usuario debe usar magic link
+- `passwordHash` es OBLIGATORIO (no puede ser null)
+- Todo usuario DEBE tener passwordHash desde su creación
+- No existe flujo alterno (magic link eliminado)
 
 **Migración**:
 - Campo ya existe en schema

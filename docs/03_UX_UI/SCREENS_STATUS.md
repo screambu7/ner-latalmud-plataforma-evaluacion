@@ -108,16 +108,18 @@ Este documento lista todas las pantallas del sistema, su estado de implementaci�
 ---
 
 ### 7. Dashboard del Admin (`/admin-dashboard`)
-**Estado**: ⚠️ Básico
+**Estado**: ✅ Completo (B2-3)
 
 **Funcionalidad implementada:**
-- ✅ Estructura básica
+- ✅ Métricas globales (total alumnos, alumnos activos, total evaluaciones, evaluaciones últimos 30 días, total reportes, total PDFs)
+- ✅ Métricas por escuela (total alumnos, alumnos activos, total evaluaciones, última evaluación)
+- ✅ Métricas por evaluador (total evaluaciones, alumnos evaluados, promedio general, última actividad)
+- ✅ Evaluaciones recientes (últimas 10)
+- ✅ Alertas ejecutivas (alumnos con promedio bajo, alumnos sin evaluación reciente, escuelas inactivas)
+- ✅ Accesos rápidos
+- ✅ Autorización estricta (solo SUPER_ADMIN)
 
-**Pendiente:**
-- ⚠️ Métricas globales
-- ⚠️ Gráficos y visualizaciones
-- ⚠️ Lista de evaluaciones recientes
-- ⚠️ Accesos rápidos
+**Pendiente**: Ninguno
 
 ---
 
@@ -439,5 +441,137 @@ curl -X POST http://localhost:3000/api/evaluaciones \
 
 ---
 
+---
+
+## 🧪 Pruebas Manuales - Admin Dashboard (B2-3)
+
+**Fecha**: 2025-01-XX  
+**Funcionalidad**: Dashboard administrativo con datos reales de Prisma
+
+### Casos de Prueba
+
+#### Caso 1: SUPER_ADMIN accede al dashboard ✅
+**Precondiciones:**
+- Usuario con rol `SUPER_ADMIN` autenticado
+- Base de datos con datos de prueba (alumnos, evaluaciones, escuelas, etc.)
+
+**Pasos:**
+1. Iniciar sesión como SUPER_ADMIN
+2. Navegar a `/admin-dashboard`
+
+**Resultado esperado:**
+- ✅ Dashboard carga sin errores
+- ✅ Métricas globales muestran números reales
+- ✅ Tabla de métricas por escuela muestra datos reales
+- ✅ Tabla de métricas por evaluador muestra datos reales
+- ✅ Evaluaciones recientes muestra últimas 10 evaluaciones
+- ✅ Alertas ejecutivas muestran alertas si aplican
+
+**Verificación en DB:**
+```sql
+-- Verificar métricas globales
+SELECT 
+  (SELECT COUNT(*) FROM "Alumno") as total_alumnos,
+  (SELECT COUNT(*) FROM "Alumno" WHERE status = 'ACTIVO') as alumnos_activos,
+  (SELECT COUNT(*) FROM "Evaluacion") as total_evaluaciones,
+  (SELECT COUNT(*) FROM "Evaluacion" WHERE fecha >= NOW() - INTERVAL '30 days') as evaluaciones_30_dias,
+  (SELECT COUNT(*) FROM "Reporte") as total_reportes,
+  (SELECT COUNT(*) FROM "Archivo" WHERE tipo = 'PDF_REPORTE') as total_pdfs;
+```
+
+---
+
+#### Caso 2: EVALUADOR intenta acceder al dashboard ❌
+**Precondiciones:**
+- Usuario con rol `EVALUADOR` autenticado
+
+**Pasos:**
+1. Iniciar sesión como EVALUADOR
+2. Intentar navegar a `/admin-dashboard` (directamente o por URL)
+
+**Resultado esperado:**
+- ❌ Error 403: "Acceso Denegado"
+- ❌ Mensaje: "No tienes permisos para acceder a esta página"
+- ❌ No se muestran datos del dashboard
+- ❌ No se ejecutan queries a la base de datos
+
+---
+
+#### Caso 3: Usuario no autenticado intenta acceder ❌
+**Precondiciones:**
+- Sin sesión activa
+
+**Pasos:**
+1. Cerrar sesión (o no iniciar sesión)
+2. Intentar navegar a `/admin-dashboard`
+
+**Resultado esperado:**
+- ❌ Redirección a `/login`
+- ❌ No se muestran datos del dashboard
+
+---
+
+### Verificación de Queries SQL
+
+#### Query 1: Métricas por Escuela
+```sql
+SELECT 
+  e.id,
+  e.nombre,
+  COUNT(DISTINCT a.id) as total_alumnos,
+  COUNT(DISTINCT CASE WHEN a.status = 'ACTIVO' THEN a.id END) as alumnos_activos,
+  COUNT(DISTINCT ev.id) as total_evaluaciones,
+  MAX(ev.fecha) as ultima_evaluacion
+FROM "Escuela" e
+LEFT JOIN "Alumno" a ON a."escuelaId" = e.id
+LEFT JOIN "Evaluacion" ev ON ev."alumnoId" = a.id
+GROUP BY e.id, e.nombre
+ORDER BY MAX(ev.fecha) DESC NULLS LAST;
+```
+
+#### Query 2: Métricas por Evaluador
+```sql
+SELECT 
+  u.id,
+  u.nombre,
+  u.correo,
+  COUNT(DISTINCT ev.id) as total_evaluaciones,
+  COUNT(DISTINCT ev."alumnoId") as alumnos_evaluados,
+  MAX(ev.fecha) as ultima_actividad
+FROM "Usuario" u
+LEFT JOIN "Evaluacion" ev ON ev."evaluadorId" = u.id
+WHERE u.rol = 'EVALUADOR'
+GROUP BY u.id, u.nombre, u.correo
+ORDER BY MAX(ev.fecha) DESC NULLS LAST;
+```
+
+#### Query 3: Evaluaciones Recientes
+```sql
+SELECT 
+  e.id,
+  e.fecha,
+  e.tipo,
+  a.nombre as alumno_nombre,
+  u.nombre as evaluador_nombre,
+  u.correo as evaluador_correo
+FROM "Evaluacion" e
+JOIN "Alumno" a ON e."alumnoId" = a.id
+JOIN "Usuario" u ON e."evaluadorId" = u.id
+ORDER BY e.fecha DESC
+LIMIT 10;
+```
+
+### Comparación de Resultados
+
+**Verificación manual:**
+1. Ejecutar las queries SQL anteriores en la base de datos
+2. Comparar los resultados con los números mostrados en el dashboard
+3. Verificar que los conteos coincidan
+4. Verificar que el ordenamiento sea correcto (última evaluación/actividad DESC NULLS LAST)
+
+**Nota:** El promedio general por evaluador se calcula usando las funciones canónicas de `calculos.ts`, por lo que puede diferir ligeramente de un cálculo SQL directo. Esto es esperado y correcto.
+
+---
+
 **Última actualización**: 2025-01-XX  
-**Versión**: 1.0
+**Versión**: 1.1

@@ -10,8 +10,9 @@
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { Rol, EstadoCuenta } from '@prisma/client';
-import { generateToken, hashToken, buildMagicLink, redactEmail } from '@/lib/magic-link';
+import bcrypt from 'bcryptjs';
 import { isSuperAdminEmail } from '@/config/super-admins';
+import { validatePasswordPolicy, PasswordPolicyError } from '@/lib/security/password-policy';
 
 /**
  * Tipo de resultado de acción
@@ -36,6 +37,15 @@ export type UsuarioListItem = {
   } | null;
   creadoEn: Date;
 };
+
+function redactEmail(correo: string): string {
+  const [user, domain] = correo.split('@');
+  if (!user || !domain) {
+    return 'redacted';
+  }
+  const visible = user.slice(0, 2);
+  return `${visible}***@${domain}`;
+}
 
 /**
  * Obtiene lista de usuarios con búsqueda y filtros
@@ -108,15 +118,42 @@ export async function getUsuarios(
 }
 
 /**
- * Crea un nuevo usuario y genera magic link de invitación
+ * Tipo de input para crear usuario
+ * 
+ * INVARIANTE: password es OBLIGATORIO (no opcional)
+ * TypeScript fallará si se intenta llamar sin password
+ */
+export type CreateUsuarioInput = {
+  correo: string;
+  nombre: string;
+  password: string; // OBLIGATORIO - no opcional
+  rol?: Rol;
+  estado?: EstadoCuenta;
+  escuelaId?: number | null;
+};
+
+/**
+ * Crea un nuevo usuario con passwordHash (password-only)
+ * 
+ * INVARIANTE: password es OBLIGATORIO desde la creación.
+ * No es posible crear usuarios sin passwordHash.
+ * 
+ * @param correo - Correo electrónico del usuario
+ * @param nombre - Nombre completo del usuario
+ * @param password - Password del usuario (OBLIGATORIO, validado con password-policy)
+ * @param rol - Rol del usuario (default: EVALUADOR)
+ * @param estado - Estado de la cuenta (default: ACTIVO)
+ * @param escuelaId - ID de la escuela (opcional)
+ * @returns ActionResult con usuarioId del usuario creado
  */
 export async function createUsuario(
   correo: string,
   nombre: string,
+  password: string, // OBLIGATORIO - no opcional
   rol: Rol = Rol.EVALUADOR,
   estado: EstadoCuenta = EstadoCuenta.ACTIVO,
   escuelaId?: number | null
-): Promise<ActionResult<{ usuarioId: number; magicLink: string }>> {
+): Promise<ActionResult<{ usuarioId: number }>> {
   try {
     const admin = await requireRole(Rol.SUPER_ADMIN);
 
@@ -130,6 +167,16 @@ export async function createUsuario(
     // Validar nombre
     if (!nombre || nombre.trim().length === 0) {
       return { success: false, error: 'Nombre es requerido' };
+    }
+
+    // Validar password usando política centralizada
+    try {
+      validatePasswordPolicy(password);
+    } catch (error) {
+      if (error instanceof PasswordPolicyError) {
+        return { success: false, error: error.message };
+      }
+      return { success: false, error: 'Password inválido' };
     }
 
     // Validar que el email no exista
@@ -154,6 +201,8 @@ export async function createUsuario(
     // Determinar rol final (si está en SUPER_ADMIN_EMAILS, forzar SUPER_ADMIN)
     const rolFinal = isSuperAdminEmail(correoNormalizado) ? Rol.SUPER_ADMIN : rol;
 
+    const passwordHash = await bcrypt.hash(password, 10);
+
     // Crear usuario
     const usuario = await db.usuario.create({
       data: {
@@ -162,26 +211,9 @@ export async function createUsuario(
         rol: rolFinal,
         estado,
         escuelaId: escuelaId || null,
+        passwordHash,
       },
     });
-
-    // Generar magic link de invitación
-    const token = generateToken();
-    const tokenHash = hashToken(token);
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + parseInt(process.env.MAGIC_LINK_TTL_MINUTES || '15', 10));
-
-    await db.loginToken.create({
-      data: {
-        email: correoNormalizado,
-        tokenHash,
-        expiresAt,
-        ip: null, // Invitación admin, no hay IP
-        userAgent: null,
-      },
-    });
-
-    const magicLink = buildMagicLink(token);
 
     // Audit log
     console.log('[AUDIT] Usuario creado:', {
@@ -193,19 +225,10 @@ export async function createUsuario(
       timestamp: new Date().toISOString(),
     });
 
-    // Log magic link (solo en desarrollo)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[MAGIC-LINK] Link de invitación generado para:', correoNormalizado);
-      console.log('[MAGIC-LINK] Link:', magicLink);
-    } else {
-      console.log('[MAGIC-LINK] Link de invitación generado para:', redactEmail(correoNormalizado));
-    }
-
     return {
       success: true,
       data: {
         usuarioId: usuario.id,
-        magicLink,
       },
     };
   } catch (error: any) {
@@ -332,72 +355,6 @@ export async function updateUsuario(
       return { success: false, error: error.message };
     }
     return { success: false, error: 'Error al actualizar usuario' };
-  }
-}
-
-/**
- * Envía magic link de invitación a un usuario existente
- */
-export async function sendInvitation(
-  usuarioId: number
-): Promise<ActionResult<{ magicLink: string }>> {
-  try {
-    const admin = await requireRole(Rol.SUPER_ADMIN);
-
-    // Obtener usuario
-    const usuario = await db.usuario.findUnique({
-      where: { id: usuarioId },
-    });
-
-    if (!usuario) {
-      return { success: false, error: 'Usuario no encontrado' };
-    }
-
-    // Generar magic link
-    const token = generateToken();
-    const tokenHash = hashToken(token);
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + parseInt(process.env.MAGIC_LINK_TTL_MINUTES || '15', 10));
-
-    await db.loginToken.create({
-      data: {
-        email: usuario.correo,
-        tokenHash,
-        expiresAt,
-        ip: null, // Invitación admin, no hay IP
-        userAgent: null,
-      },
-    });
-
-    const magicLink = buildMagicLink(token);
-
-    // Audit log
-    console.log('[AUDIT] Invitación enviada:', {
-      adminId: admin.id,
-      adminEmail: admin.correo,
-      usuarioId: usuario.id,
-      usuarioEmail: redactEmail(usuario.correo),
-      timestamp: new Date().toISOString(),
-    });
-
-    // Log magic link (solo en desarrollo)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[MAGIC-LINK] Link de invitación re-enviado para:', usuario.correo);
-      console.log('[MAGIC-LINK] Link:', magicLink);
-    } else {
-      console.log('[MAGIC-LINK] Link de invitación re-enviado para:', redactEmail(usuario.correo));
-    }
-
-    return {
-      success: true,
-      data: { magicLink },
-    };
-  } catch (error) {
-    console.error('[USUARIOS] Error al enviar invitación:', error);
-    if (error instanceof Error && (error.message === 'No autenticado' || error.message === 'No autorizado')) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'Error al enviar invitación' };
   }
 }
 

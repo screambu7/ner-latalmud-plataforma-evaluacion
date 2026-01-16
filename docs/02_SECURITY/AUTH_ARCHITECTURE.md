@@ -1,20 +1,30 @@
 # 🔐 Sistema de Autenticación - Ner LaTalmud
 
-> **⚠️ ACTUALIZADO (PR1)**: Este documento describe el sistema de autenticación con Magic Link y JWT implementado en PR1.
-> El sistema anterior (email-only con auto-creación) ha sido deprecado.
+> **⚠️ ACTUALIZADO**: Este documento describe el sistema de autenticación actual.
+> **REFERENCIA PRINCIPAL:** Ver `.cursorrules-auth` para reglas completas y actualizadas.
 
 ## 📋 Resumen
 
-Sistema de autenticación con Magic Link y sesión JWT. Implementado con Next.js App Router, Prisma y cookies JWT httpOnly.
+Sistema de autenticación con **Password Auth** (único método activo) y sesión JWT. Implementado con Next.js App Router, Prisma y cookies JWT httpOnly.
+
+**Estado:**
+- ✅ Password Auth: ACTIVO (único método permitido)
+- ❌ Magic Link: CONGELADO (no usar, ampliar ni reactivar)
 
 ---
 
 ## 🏗️ Arquitectura del Sistema
 
-### Flujo General (PR1: Magic Link)
+### Flujo General (Password Auth - ÚNICO MÉTODO ACTIVO)
 
 ```
-Usuario → Request Magic Link → Email/Console → Click Link → Callback → JWT Cookie → Middleware → Páginas Protegidas
+Usuario → Login (correo + password) → Validación bcrypt → JWT Cookie → Middleware → Páginas Protegidas
+```
+
+### Flujo de Signup
+
+```
+Usuario → Signup (nombre + correo + password) → Hash bcrypt → Usuario con passwordHash → Estado ACTIVO
 ```
 
 ### Componentes Principales
@@ -25,10 +35,13 @@ Usuario → Request Magic Link → Email/Console → Click Link → Callback →
    - `/forgot-password` - Recuperación de contraseña
 
 2. **API Routes** (`src/app/api/auth/`)
-   - `POST /api/auth/request-link` - Solicitar magic link (PR1)
-   - `GET /api/auth/callback` - Validar magic link y crear sesión (PR1)
-   - `POST /api/auth/logout` - Cerrar sesión
-   - `POST /api/auth/forgot` - Solicitar magic link (alias de request-link)
+   - `POST /api/auth/login` - Login con password (ACTIVO)
+   - `POST /api/auth/signup` - Registro con password (ACTIVO)
+   - `POST /api/auth/logout` - Cerrar sesión (ACTIVO)
+   - `POST /api/auth/forgot-password` - Solicitar reset de password (ACTIVO)
+   - `POST /api/auth/request-link` - **CONGELADO** (Magic Link, código comentado)
+   - `GET /api/auth/callback` - **CONGELADO** (Magic Link, código comentado)
+   - `POST /api/auth/forgot` - **CONGELADO** (Magic Link, código comentado)
    - `POST /api/auth` - **DEPRECADO** (410 Gone)
 
 3. **Middleware** (`src/middleware.ts`)

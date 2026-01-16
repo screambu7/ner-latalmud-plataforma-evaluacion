@@ -1,0 +1,96 @@
+# Cursor Rules — Quality Gate (NO EXCEPTIONS)
+
+**Prioridad máxima. Estas reglas prevalecen sobre cualquier otra si hay conflicto.**
+
+⸻
+
+## Principio Supremo
+
+**CUALQUIER WARNING ES UN BUG.**  
+**CUALQUIER BUG BLOQUEA MERGE.**
+
+No existen excepciones temporales, implícitas o "documentadas".  
+Si algo no cumple, NO se integra.
+
+⸻
+
+## Gates Obligatorios (100% VERDE)
+
+Antes de commit / push / merge:
+
+- `npm run lint` → 0 warnings, 0 errors
+- `npm run typecheck` → 0 errors
+- `npm run build` → 0 warnings, 0 errors
+- Tests (si aplica) → 100% pass
+
+Si cualquiera falla:
+- ❌ NO commit
+- ❌ NO push
+- ❌ NO merge
+
+⸻
+
+## TypeScript (STRICT)
+
+- `strict: true` obligatorio
+- Prohibido:
+  - variables potencialmente no inicializadas
+  - `any` (excepto casts justificados y documentados)
+  - non-null assertions (`!`) sin guard explícito
+- Todos los paths deben ser exhaustivos
+- Todos los enums deben manejarse explícitamente
+
+⸻
+
+## Linting
+
+- ESLint sin warnings permitidos
+- Prohibido:
+  - variables no usadas
+  - imports muertos
+  - console.log en código productivo
+- Los warnings se tratan como errores
+
+⸻
+
+## Build
+
+- `next build` debe pasar sin advertencias
+- Prohibido:
+  - warnings de React
+  - warnings de Next
+  - deprecations ignoradas
+
+⸻
+
+## Congelamientos (ÚNICA VÍA ESPECIAL)
+
+Un módulo puede estar **CONGELADO**, pero:
+- Debe estar documentado en `GOVERNANCE.md`
+- No puede generar warnings
+- No puede romper build
+- No puede mutar comportamiento
+
+**CONGELADO ≠ excepción**  
+**CONGELADO = no se toca**
+
+⸻
+
+## Responsabilidad
+
+- El autor del cambio es responsable del estado verde
+- Cursor NO puede "seguir adelante" si hay warnings
+- Auditor/QA puede BLOQUEAR sin discusión
+
+⸻
+
+## Regla Final
+
+Si el sistema permite que un warning llegue a `main`,  
+la gobernanza falló.
+
+⸻
+
+**Última actualización:** hoy  
+**Estado:** ACTIVO  
+**Scope:** Build, Lint, TypeScript, Tests, CI/CD

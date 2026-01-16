@@ -27,11 +27,23 @@ export async function setSessionCookie(
 }
 
 /**
- * Borra la cookie de sesión
+ * Borra la cookie de sesión de forma segura
+ * 
+ * Establece la cookie con maxAge=0 para asegurar que se borre inmediatamente
+ * en todos los navegadores, incluso si hay problemas con delete().
  */
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete('session');
+  
+  // Establecer cookie vacía con maxAge=0 para borrado seguro
+  // Debe coincidir con las opciones de setSessionCookie para asegurar borrado correcto
+  cookieStore.set('session', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0, // Borrar inmediatamente
+  });
 }
 
 

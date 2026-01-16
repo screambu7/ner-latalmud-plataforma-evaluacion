@@ -1,26 +1,37 @@
 /**
- * Endpoint temporal para configurar passwordHash de un usuario
+ * Endpoint para configurar passwordHash de un usuario
  * 
- * ⚠️ SOLO PARA CONFIGURACIÓN INICIAL
- * Debe ser removido o protegido después de configurar usuarios
+ * ⚠️ PROTEGIDO (B2-2 Hardening)
+ * 
+ * SOLO permitido si:
+ * - Usuario autenticado
+ * - Rol = SUPER_ADMIN
+ * - Usuario target existe
+ * 
+ * ❌ ALLOW_PASSWORD_SETUP eliminado
+ * ❌ Endpoint público eliminado
  * 
  * POST /api/admin/set-password
+ * Headers: Cookie con sesión JWT válida
  * Body: { email: string, password: string }
  */
 
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireRole } from '@/lib/auth';
+import { Rol } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { validatePasswordPolicy, PasswordPolicyError } from '@/lib/security/password-policy';
 
 export async function POST(request: Request) {
   try {
-    // ⚠️ SEGURIDAD: Solo permitir en desarrollo o con flag especial
-    const isDev = process.env.NODE_ENV === 'development';
-    const allowPasswordSetup = process.env.ALLOW_PASSWORD_SETUP === 'true';
-    
-    if (!isDev && !allowPasswordSetup) {
+    // B2-2: Requerir autenticación y rol SUPER_ADMIN
+    let currentUser;
+    try {
+      currentUser = await requireRole(Rol.SUPER_ADMIN);
+    } catch (authError) {
       return NextResponse.json(
-        { error: 'Este endpoint solo está disponible en desarrollo o con flag ALLOW_PASSWORD_SETUP=true' },
+        { error: 'No autorizado. Se requiere autenticación y rol SUPER_ADMIN.' },
         { status: 403 }
       );
     }
@@ -31,6 +42,22 @@ export async function POST(request: Request) {
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email y password son requeridos' },
+        { status: 400 }
+      );
+    }
+
+    // Validar password usando política centralizada
+    try {
+      validatePasswordPolicy(password);
+    } catch (error) {
+      if (error instanceof PasswordPolicyError) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json(
+        { error: 'Password inválido' },
         { status: 400 }
       );
     }

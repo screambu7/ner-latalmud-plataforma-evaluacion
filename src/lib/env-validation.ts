@@ -155,5 +155,6 @@ export function validateRequiredEnvVars(): void {
   }
 }
 
-// Validación se hace de forma lazy en jwt.ts y magic-link.ts
+// Validación se hace de forma lazy en jwt.ts
 // No validar al importar para evitar problemas en build time
+// Nota: magic-link.ts fue movido a __deprecated__

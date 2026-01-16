@@ -9,7 +9,6 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [devMagicLink, setDevMagicLink] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,13 +32,6 @@ export default function ForgotPasswordPage() {
         setError(data.error || 'Error al procesar la solicitud');
         setLoading(false);
         return;
-      }
-
-      // Capturar magicLink si está presente (solo en dev mode con flags habilitados)
-      if (data.magicLink) {
-        setDevMagicLink(data.magicLink);
-      } else {
-        setDevMagicLink(null);
       }
 
       setSuccess(true);
@@ -82,19 +74,19 @@ export default function ForgotPasswordPage() {
               </svg>
             </div>
           </div>
-          <h1 className="mb-2 text-3xl font-bold text-[#0d151b] tracking-tight">
+          <h1 className="mb-2 text-3xl font-bold text-[color:var(--color-text-primary)] tracking-tight">
             Recuperar contraseña
           </h1>
-          <p className="text-slate-600 text-sm font-medium">
+          <p className="text-[color:var(--color-text-secondary)] text-sm font-medium">
             Ingresa tu correo para recibir instrucciones
           </p>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl bg-white p-8 shadow-lg shadow-primary/10 border border-neutral-100">
+        <div className="rounded-2xl bg-[color:var(--color-background-white)] p-8 shadow-lg shadow-primary/10 border border-[color:var(--color-border-light)]">
           {!success ? (
             <>
-              <h2 className="mb-6 text-xl font-bold text-[#0d151b] text-center">
+              <h2 className="mb-6 text-xl font-bold text-[color:var(--color-text-primary)] text-center">
                 ¿Olvidaste tu contraseña?
               </h2>
 
@@ -102,7 +94,7 @@ export default function ForgotPasswordPage() {
                 <div>
                   <label
                     htmlFor="correo"
-                    className="mb-2 block text-sm font-semibold text-slate-700"
+                    className="mb-2 block text-sm font-semibold text-[color:var(--color-text-secondary)]"
                   >
                     Correo electrónico
                   </label>
@@ -114,19 +106,19 @@ export default function ForgotPasswordPage() {
                     required
                     disabled={loading}
                     autoComplete="email"
-                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
+                    className="w-full rounded-lg border border-[color:var(--color-border-light)] bg-[color:var(--color-background-white)] px-4 py-3 text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-[color:var(--color-background-light)] disabled:cursor-not-allowed"
                     placeholder="tu@correo.com"
                   />
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-[color:var(--color-text-tertiary)]">
                     Te enviaremos un enlace para restablecer tu contraseña
                   </p>
                 </div>
 
                 {error && (
-                  <div className="rounded-lg bg-red-50 border border-red-100 p-3">
+                  <div className="rounded-lg bg-[color:var(--color-alert-error-bg)] border border-[color:var(--color-alert-error-border)] p-3">
                     <div className="flex items-center gap-2">
                       <svg
-                        className="h-5 w-5 text-red-600"
+                        className="h-5 w-5 text-[color:var(--color-alert-error)]"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -138,7 +130,7 @@ export default function ForgotPasswordPage() {
                           d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      <p className="text-sm font-medium text-red-700">{error}</p>
+                      <p className="text-sm font-medium text-[color:var(--color-alert-error)]">{error}</p>
                     </div>
                   </div>
                 )}
@@ -146,7 +138,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-lg bg-primary px-4 py-3 text-white font-semibold shadow-lg shadow-primary/30 hover:bg-primary-dark active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg bg-primary px-4 py-3 text-[color:var(--color-text-inverse)] font-semibold shadow-lg shadow-primary/30 hover:bg-[color:var(--color-primary-dark)] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
@@ -180,9 +172,9 @@ export default function ForgotPasswordPage() {
           ) : (
             <div className="text-center space-y-4">
               <div className="flex justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--color-alert-success-bg)]">
                   <svg
-                    className="h-8 w-8 text-green-600"
+                    className="h-8 w-8 text-[color:var(--color-alert-success)]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -196,39 +188,21 @@ export default function ForgotPasswordPage() {
                   </svg>
                 </div>
               </div>
-              <h2 className="text-xl font-bold text-[#0d151b]">
+              <h2 className="text-xl font-bold text-[color:var(--color-text-primary)]">
                 Correo enviado
               </h2>
-              <p className="text-slate-600 text-sm">
+              <p className="text-[color:var(--color-text-secondary)] text-sm">
                 Si el correo <span className="font-semibold">{correo}</span> está
                 registrado, recibirás instrucciones para restablecer tu contraseña.
               </p>
-              <p className="text-slate-500 text-xs">
-                Revisa tu bandeja de entrada y carpeta de spam.
+              <p className="text-[color:var(--color-text-tertiary)] text-xs">
+                Contacta al administrador para restablecer tu contraseña.
               </p>
-
-              {devMagicLink && (
-                <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-4 text-left">
-                  <div className="mb-2">
-                    <p className="text-sm font-semibold text-amber-900">
-                      Modo desarrollo: acceso temporal
-                    </p>
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-xs text-amber-800 mb-2">Magic Link:</p>
-                    <div className="bg-white rounded border border-amber-200 p-2 break-all">
-                      <code className="text-xs text-amber-900 select-all">
-                        {devMagicLink}
-                      </code>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
           {/* Link a login */}
-          <div className="mt-6 border-t border-neutral-100 pt-6">
+          <div className="mt-6 border-t border-[color:var(--color-border-light)] pt-6">
             <Link
               href="/login"
               className="block w-full text-center text-sm text-primary hover:underline font-medium"
@@ -240,7 +214,7 @@ export default function ForgotPasswordPage() {
 
         {/* Footer de la página */}
         <div className="mt-8 text-center">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[color:var(--color-text-tertiary)]">
             © {new Date().getFullYear()} Ner LaTalmud. Todos los derechos reservados.
           </p>
         </div>

@@ -82,6 +82,32 @@ sobre el código, documentación y arquitectura del proyecto.
 
 ## 🎨 UI Integrator
 
+### SYSTEM PROMPT
+
+Estás trabajando en el proyecto Ner LaTalmud.
+
+Tu responsabilidad es integrar UI existente (HTML + Tailwind) a React / Next.js sin modificar diseño.
+
+**Reglas absolutas:**
+- ❌ No cambies HTML ni clases Tailwind
+- ❌ No cambies colores, tipografías o layout
+- ❌ No agregues lógica de negocio
+- ❌ No calcules métricas
+- ❌ No accedas a Prisma
+
+**Sí puedes:**
+- Convertir HTML a componentes React
+- Extraer componentes reutilizables (Card, Header, Section)
+- Conectar props tipadas desde DTOs
+- Implementar estados loading | error | empty
+- Conectar eventos a Server Actions existentes
+
+**Objetivo:**
+
+Mantener fidelidad visual 100% y preparar la UI para recibir datos reales.
+
+Si algo no está claro, NO improvises, deja TODO preparado para que otro agente lo conecte.
+
 ### Responsabilidades
 - Integrar HTML + Tailwind existentes
 - Convertir HTML a componentes React/Next
@@ -94,10 +120,12 @@ sobre el código, documentación y arquitectura del proyecto.
 - Usar DTOs (`src/lib/types/evaluador-dtos.ts`)
 - Implementar estados de UI (loading, error, empty)
 - Conectar eventos a Server Actions
+- Extraer componentes reutilizables (Card, Header, Section)
 
 ### No puede
 - Cambiar estructura HTML
 - Cambiar clases Tailwind
+- Cambiar colores, tipografías o layout
 - Crear lógica de negocio
 - Acceder a Prisma directamente
 - Calcular promedios o métricas
@@ -183,17 +211,20 @@ sobre el código, documentación y arquitectura del proyecto.
 - Validar permisos y autorización
 - Detectar vulnerabilidades
 - Asegurar protección de datos sensibles
+- **Aplicar reglas de `.cursorrules-auth` (prioridad máxima)**
 
 ### Puede
 - Revisar implementación de auth
 - Proponer mejoras de seguridad
 - Auditar endpoints y Server Actions
 - Validar manejo de sesiones
+- Bloquear cambios que violen reglas de autenticación
 
 ### No puede
-- Implementar features completas
+- Implementar features completas sin autorización
 - Cambiar lógica de negocio
 - Modificar UI sin justificación de seguridad
+- Reactivar Magic Link sin aprobación explícita (CTO/Owner)
 
 ---
 
@@ -238,6 +269,8 @@ Este sistema protege la integridad del proyecto a largo plazo.
 | `src/lib/pdf-service.ts` | ✅ Revisar | ❌ | ❌ | ❌ | ✅ Crear/Modificar | ✅ Auditar | ✅ Documentar |
 | `prisma/schema.prisma` | ✅ Revisar | ❌ | ✅ Proponer cambios | ❌ | ❌ | ✅ Auditar | ✅ Documentar |
 | `.cursorrules*` | ✅ Crear/Modificar | ❌ | ❌ | ❌ | ❌ | ✅ Auditar | ✅ Documentar |
+| `.cursorrules-auth` | ✅ Crear/Modificar | ❌ | ❌ | ❌ | ❌ | ✅ Auditar | ✅ Documentar |
+| `.cursorrules-quality` | ✅ Crear/Modificar | ❌ | ❌ | ❌ | ❌ | ✅ Auditar | ✅ Documentar |
 | `/docs/*.md` | ✅ Revisar | ✅ (solo dominio) | ✅ (solo backend) | ✅ (solo UI) | ✅ (solo PDF) | ✅ Crear | ✅ Crear/Modificar |
 
 **Leyenda:**
@@ -258,5 +291,17 @@ Este sistema protege la integridad del proyecto a largo plazo.
 
 ---
 
+---
+
+## 📚 Referencias de Reglas
+
+- **Calidad**: `.cursorrules-quality` - Quality gates (prioridad máxima, NO EXCEPTIONS)
+- **Autenticación**: `.cursorrules-auth` - Reglas oficiales de autenticación (prioridad máxima)
+- **Dominio**: `.cursorrules-domain` - Reglas de separación de responsabilidades
+- **UI Integrator**: `.cursorrules-ui-integrator` - Reglas de integración de UI
+- **Gobernanza**: `docs/00_OVERVIEW/GOVERNANCE.md` - Reglas de gobernanza del proyecto
+
+---
+
 **Última actualización:** 2025-01-XX  
-**Versión:** 1.0
+**Versión:** 1.1

@@ -22,26 +22,26 @@ La paleta y tipografía han sido seleccionadas para evocar autoridad, tradición
 
 ### Paleta de Colores
 
-#### Colores Principales
+#### Colores Principales (Paleta Oficial)
 
 | Color | Código | Uso | Significado |
 |-------|--------|-----|-------------|
-| **Azul Oxford** | `#1A237E` | Color primario | Profundidad académica y autoridad institucional |
-| **Crema Pergamino** | `#FDFCF0` | Fondo principal | Evoca páginas de libros clásicos, reduce fatiga visual |
-| **Dorado Antiguo** | `#C5A059` | Acentos y destacados | Logros y estados de excelencia |
-| **Gris Pizarra** | `#455A64` | Textos secundarios | Descripciones y contenido secundario |
-| **Rojo Alerta** | `#D32F2F` | Alertas críticas | Exclusivo para alertas críticas o alumnos con estancamiento |
+| **Negro** | `#000000` | Color primario | Autoridad, elegancia y contraste máximo |
+| **Amarillo** | `#f6aa1b` | Acentos, éxito, advertencias | Energía, logros y estados destacados |
+| **Naranja** | `#ed6738` | Errores, alertas críticas | Urgencia, atención requerida |
+| **Blanco** | `#ffffff` | Fondo principal | Limpieza, espacio y legibilidad |
 
 #### Colores del Sistema (Tailwind)
 
 ```css
-primary: #2111d4        /* Azul primario del sistema */
-paper: #FDFCF0          /* Crema pergamino - fondo */
-alert: #ef4444          /* Rojo alerta */
-success: #22c55e        /* Verde éxito */
-warning: #eab308        /* Amarillo advertencia */
-background-light: #f6f6f8
-background-dark: #121022
+primary: #000000        /* Negro - Color primario */
+paper: #ffffff          /* Blanco - Fondo principal */
+yellow: #f6aa1b         /* Amarillo - Éxito y advertencias */
+orange: #ed6738         /* Naranja - Errores y alertas */
+black: #000000          /* Negro - Texto principal */
+white: #ffffff          /* Blanco - Fondos y texto inverso */
+background-light: #F5F5F5
+background-card: #FAFAFA
 ```
 
 ### Tipografía
@@ -236,16 +236,23 @@ Alerta Crítica
 ### 6.1 Uso de Colores
 
 ```tsx
-// Colores primarios
-className="bg-primary text-white"        // Azul Oxford
-className="bg-paper"                     // Crema Pergamino
-className="text-alert"                   // Rojo Alerta
-className="text-success"                 // Verde Éxito
-className="text-warning"                 // Amarillo Advertencia
+// Colores primarios (Paleta oficial)
+className="bg-primary text-white"        // Negro - Color primario
+className="bg-paper"                     // Blanco - Fondo principal
+className="text-yellow"                  // Amarillo - Éxito y advertencias
+className="text-orange"                  // Naranja - Errores y alertas
+className="text-white"                   // Blanco - Texto inverso
+
+// Colores semánticos
+className="text-success"                 // Amarillo (#f6aa1b)
+className="text-error"                   // Naranja (#ed6738)
+className="text-warning"                 // Amarillo (#f6aa1b)
+className="text-info"                    // Negro (#000000)
 
 // Colores específicos del diseño
-style={{ color: '#C5A059' }}            // Dorado Antiguo (logros)
-style={{ color: '#455A64' }}            // Gris Pizarra (textos secundarios)
+style={{ color: '#f6aa1b' }}            // Amarillo (logros, éxito)
+style={{ color: '#ed6738' }}            // Naranja (errores, alertas)
+style={{ color: '#000000' }}            // Negro (texto principal)
 ```
 
 ### 6.2 Tipografía
@@ -266,18 +273,18 @@ style={{ color: '#455A64' }}            // Gris Pizarra (textos secundarios)
 
 **Stats Card:**
 ```tsx
-<div className="bg-[#e7eef3] rounded-lg p-6">
-  <p className="text-[#0d151b] text-base font-medium">Título</p>
-  <p className="text-[#0d151b] text-2xl font-bold">Valor</p>
-  <p className="text-[#078838] text-base font-medium">+10%</p>
+<div className="bg-[color:var(--color-background-card)] rounded-lg p-6">
+  <p className="text-[color:var(--color-text-primary)] text-base font-medium">Título</p>
+  <p className="text-[color:var(--color-text-primary)] text-2xl font-bold">Valor</p>
+  <p className="text-[color:var(--color-success)] text-base font-medium">+10%</p>
 </div>
 ```
 
 **Alerta Crítica:**
 ```tsx
-<div className="bg-red-50 border border-red-100">
-  <span className="text-alert">⚠️ Alerta</span>
-  <p className="text-slate-800">Mensaje de alerta</p>
+<div className="bg-[color:var(--color-alert-error-bg)] border border-[color:var(--color-alert-error-border)]">
+  <span className="text-[color:var(--color-alert-error)]">⚠️ Alerta</span>
+  <p className="text-[color:var(--color-text-primary)]">Mensaje de alerta</p>
 </div>
 ```
 
@@ -329,8 +336,9 @@ Antes de implementar cualquier pantalla, verificar:
 ### Estado Actual vs. Diseño Ideal
 
 **Colores:**
-- ✅ Paleta base implementada (primary, paper, alert, success, warning)
-- ⏳ Colores específicos (Dorado Antiguo, Gris Pizarra) pendientes de implementar
+- ✅ Paleta oficial implementada (Negro, Amarillo, Naranja, Blanco)
+- ✅ Tokens centralizados en `design-tokens.ts` y `globals.css`
+- ✅ Variables CSS disponibles para uso en componentes
 
 **Tipografía:**
 - ✅ Fuentes actuales: Lexend (display) y Noto Sans (body)
@@ -344,10 +352,10 @@ Antes de implementar cualquier pantalla, verificar:
 
 ### Próximos Pasos
 
-1. **Actualizar Paleta de Colores**
-   - Agregar Dorado Antiguo (`#C5A059`) para logros
-   - Agregar Gris Pizarra (`#455A64`) para textos secundarios
-   - Actualizar Azul Oxford si es necesario
+1. **Refinar Uso de Colores**
+   - Optimizar contraste de texto sobre fondos amarillos/naranjas
+   - Ajustar variantes de grises para textos secundarios
+   - Validar accesibilidad (WCAG AA) con nueva paleta
 
 2. **Actualizar Tipografía**
    - Evaluar migración a Playfair Display/EB Garamond para títulos

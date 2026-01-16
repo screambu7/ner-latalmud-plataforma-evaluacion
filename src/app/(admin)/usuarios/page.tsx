@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getUsuarios, createUsuario, updateUsuario, sendInvitation, getEscuelas, type UsuarioListItem } from '@/app/actions/usuarios';
+import { getUsuarios, createUsuario, updateUsuario, getEscuelas, type UsuarioListItem } from '@/app/actions/usuarios';
 import { Rol, EstadoCuenta } from '@prisma/client';
 
 export default function UsuariosPage() {
@@ -22,12 +22,14 @@ export default function UsuariosPage() {
   const [createForm, setCreateForm] = useState<{
     correo: string;
     nombre: string;
+    password: string;
     rol: Rol;
     estado: EstadoCuenta;
     escuelaId: string;
   }>({
     correo: '',
     nombre: '',
+    password: '',
     rol: Rol.EVALUADOR,
     estado: EstadoCuenta.ACTIVO,
     escuelaId: '',
@@ -75,6 +77,7 @@ export default function UsuariosPage() {
     const result = await createUsuario(
       createForm.correo,
       createForm.nombre,
+      createForm.password,
       createForm.rol,
       createForm.estado,
       createForm.escuelaId ? parseInt(createForm.escuelaId) : null
@@ -85,17 +88,13 @@ export default function UsuariosPage() {
       return;
     }
 
-    // Mostrar magic link en desarrollo
-    if (process.env.NODE_ENV === 'development') {
-      alert(`Usuario creado. Magic link: ${result.data.magicLink}`);
-    } else {
-      alert('Usuario creado. El link de invitación ha sido generado (revisar logs del servidor).');
-    }
+    alert('Usuario creado con credenciales iniciales.');
 
     setShowCreateModal(false);
     setCreateForm({
       correo: '',
       nombre: '',
+      password: '',
       rol: Rol.EVALUADOR,
       estado: EstadoCuenta.ACTIVO,
       escuelaId: '',
@@ -122,23 +121,6 @@ export default function UsuariosPage() {
     setShowEditModal(false);
     setEditingUsuario(null);
     cargarUsuarios();
-  };
-
-  const handleInvite = async (usuarioId: number) => {
-    setError('');
-    const result = await sendInvitation(usuarioId);
-
-    if (!result.success) {
-      setError(result.error);
-      return;
-    }
-
-    // Mostrar magic link en desarrollo
-    if (process.env.NODE_ENV === 'development') {
-      alert(`Link de invitación generado: ${result.data.magicLink}`);
-    } else {
-      alert('Link de invitación generado (revisar logs del servidor).');
-    }
   };
 
   const getRolColor = (rol: Rol) => {
@@ -272,12 +254,6 @@ export default function UsuariosPage() {
                       >
                         Editar
                       </button>
-                      <button
-                        onClick={() => handleInvite(usuario.id)}
-                        className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                      >
-                        Invitar
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -312,6 +288,18 @@ export default function UsuariosPage() {
                   onChange={(e) => setCreateForm({ ...createForm, nombre: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Password inicial *</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                />
+                <p className="mt-1 text-xs text-gray-500">Mínimo 8 caracteres.</p>
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">Rol</label>

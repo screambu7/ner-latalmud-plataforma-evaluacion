@@ -113,8 +113,8 @@ export default function SignUpPage() {
     >
       {/* Fondo decorativo */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -right-1/4 -top-1/4 h-96 w-96 rounded-full bg-primary/5 blur-3xl"></div>
-        <div className="absolute -bottom-1/4 -left-1/4 h-96 w-96 rounded-full bg-primary/5 blur-3xl"></div>
+        <div className="absolute -right-1/4 -top-1/4 h-96 w-96 rounded-full bg-[color:var(--color-yellow)]/10 blur-3xl"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 h-96 w-96 rounded-full bg-[color:var(--color-orange)]/10 blur-3xl"></div>
       </div>
 
       {/* Contenedor principal */}
@@ -122,9 +122,9 @@ export default function SignUpPage() {
         {/* Logo/Header */}
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--color-yellow)]/20 border-2 border-[color:var(--color-yellow)]/30">
               <svg
-                className="h-10 w-10 text-primary"
+                className="h-10 w-10 text-[color:var(--color-primary)]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -138,23 +138,23 @@ export default function SignUpPage() {
               </svg>
             </div>
           </div>
-          <h1 className="mb-2 text-3xl font-bold text-[#0d151b] tracking-tight">
+          <h1 className="mb-2 text-3xl font-bold text-[color:var(--color-text-primary)] tracking-tight">
             Ner LaTalmud
           </h1>
-          <p className="text-slate-600 text-sm font-medium">
+          <p className="text-[color:var(--color-text-secondary)] text-sm font-medium">
             Crear nueva cuenta
           </p>
         </div>
 
         {/* Card de Sign Up */}
-        <div className="rounded-2xl bg-white p-8 shadow-lg shadow-primary/10 border border-neutral-100">
+        <div className="rounded-2xl bg-[color:var(--color-background-white)] p-8 shadow-lg shadow-[color:var(--color-yellow)]/10 border border-[color:var(--color-border-light)]">
           {success ? (
             /* Pantalla de éxito */
             <div className="text-center">
               <div className="mb-6 flex justify-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[color:var(--color-alert-success-bg)]">
                   <svg
-                    className="h-12 w-12 text-green-600"
+                    className="h-12 w-12 text-[color:var(--color-alert-success)]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -168,16 +168,16 @@ export default function SignUpPage() {
                   </svg>
                 </div>
               </div>
-              <h2 className="mb-4 text-2xl font-bold text-[#0d151b]">
+              <h2 className="mb-4 text-2xl font-bold text-[color:var(--color-text-primary)]">
                 ¡Cuenta creada exitosamente!
               </h2>
-              <p className="mb-6 text-slate-600 text-sm leading-relaxed">
-                Revisa tu correo electrónico <span className="font-semibold text-slate-800">{successEmail}</span> para acceder con el link de inicio de sesión.
+              <p className="mb-6 text-[color:var(--color-text-secondary)] text-sm leading-relaxed">
+                Revisa tu correo electrónico <span className="font-semibold text-[color:var(--color-text-primary)]">{successEmail}</span> para acceder con el link de inicio de sesión.
               </p>
               <div className="space-y-3">
                 <Link
                   href="/login"
-                  className="block w-full rounded-lg bg-primary px-4 py-3 text-white font-semibold shadow-lg shadow-primary/30 hover:bg-primary-dark active:scale-[0.98] transition-all"
+                  className="block w-full rounded-lg bg-[color:var(--color-yellow)] px-4 py-3 text-[color:var(--color-primary)] font-bold shadow-lg shadow-[color:var(--color-yellow)]/30 hover:bg-[color:var(--color-yellow)]/90 active:scale-[0.98] transition-all"
                 >
                   Volver al inicio de sesión
                 </Link>
@@ -194,7 +194,7 @@ export default function SignUpPage() {
                     });
                     setError('');
                   }}
-                  className="block w-full rounded-lg border-2 border-neutral-200 px-4 py-3 text-slate-700 font-semibold hover:bg-neutral-50 active:scale-[0.98] transition-all"
+                  className="block w-full rounded-lg border-2 border-[color:var(--color-border-light)] px-4 py-3 text-[color:var(--color-text-secondary)] font-semibold hover:bg-[color:var(--color-background-light)] active:scale-[0.98] transition-all"
                 >
                   Crear otra cuenta
                 </button>
@@ -202,7 +202,7 @@ export default function SignUpPage() {
             </div>
           ) : (
             <>
-              <h2 className="mb-6 text-xl font-bold text-[#0d151b] text-center">
+              <h2 className="mb-6 text-xl font-bold text-[color:var(--color-text-primary)] text-center">
                 Registrarse
               </h2>
 
@@ -214,7 +214,7 @@ export default function SignUpPage() {
             <div>
               <label
                 htmlFor="nombre"
-                className="mb-2 block text-sm font-semibold text-slate-700"
+                className="mb-2 block text-sm font-semibold text-[color:var(--color-text-secondary)]"
               >
                 Nombre completo
               </label>
@@ -226,7 +226,7 @@ export default function SignUpPage() {
                 onChange={handleChange}
                 required
                 disabled={loading}
-                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
+                className="w-full rounded-lg border border-[color:var(--color-border-light)] bg-[color:var(--color-background-white)] px-4 py-3 text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-yellow)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-yellow)]/20 transition-colors disabled:bg-[color:var(--color-background-light)] disabled:cursor-not-allowed"
                 placeholder="Tu nombre completo"
               />
             </div>
@@ -234,7 +234,7 @@ export default function SignUpPage() {
             <div>
               <label
                 htmlFor="correo"
-                className="mb-2 block text-sm font-semibold text-slate-700"
+                className="mb-2 block text-sm font-semibold text-[color:var(--color-text-secondary)]"
               >
                 Correo electrónico
               </label>
@@ -247,7 +247,7 @@ export default function SignUpPage() {
                 required
                 disabled={loading}
                 autoComplete="email"
-                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
+                className="w-full rounded-lg border border-[color:var(--color-border-light)] bg-[color:var(--color-background-white)] px-4 py-3 text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-yellow)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-yellow)]/20 transition-colors disabled:bg-[color:var(--color-background-light)] disabled:cursor-not-allowed"
                 placeholder="tu@correo.com"
               />
             </div>
@@ -255,7 +255,7 @@ export default function SignUpPage() {
             <div>
               <label
                 htmlFor="password"
-                className="mb-2 block text-sm font-semibold text-slate-700"
+                className="mb-2 block text-sm font-semibold text-[color:var(--color-text-secondary)]"
               >
                 Contraseña
               </label>
@@ -270,14 +270,14 @@ export default function SignUpPage() {
                   disabled={loading}
                   minLength={6}
                   autoComplete="new-password"
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 pr-12 text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg border border-[color:var(--color-border-light)] bg-[color:var(--color-background-white)] px-4 py-3 pr-12 text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-yellow)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-yellow)]/20 transition-colors disabled:bg-[color:var(--color-background-light)] disabled:cursor-not-allowed"
                   placeholder="Mínimo 6 caracteres"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)] transition-colors disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     {showPassword ? 'visibility_off' : 'visibility'}
@@ -289,7 +289,7 @@ export default function SignUpPage() {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="mb-2 block text-sm font-semibold text-slate-700"
+                className="mb-2 block text-sm font-semibold text-[color:var(--color-text-secondary)]"
               >
                 Confirmar contraseña
               </label>
@@ -303,14 +303,14 @@ export default function SignUpPage() {
                   required
                   disabled={loading}
                   autoComplete="new-password"
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 pr-12 text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg border border-[color:var(--color-border-light)] bg-[color:var(--color-background-white)] px-4 py-3 pr-12 text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-yellow)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-yellow)]/20 transition-colors disabled:bg-[color:var(--color-background-light)] disabled:cursor-not-allowed"
                   placeholder="Repite tu contraseña"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   disabled={loading}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)] transition-colors disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     {showConfirmPassword ? 'visibility_off' : 'visibility'}
@@ -320,10 +320,10 @@ export default function SignUpPage() {
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-50 border border-red-100 p-3">
+              <div className="rounded-lg bg-[color:var(--color-alert-error-bg)] border border-[color:var(--color-alert-error-border)] p-3">
                 <div className="flex items-center gap-2">
                   <svg
-                    className="h-5 w-5 text-red-600"
+                    className="h-5 w-5 text-[color:var(--color-alert-error)]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -335,7 +335,7 @@ export default function SignUpPage() {
                       d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <p className="text-sm font-medium text-red-700">{error}</p>
+                  <p className="text-sm font-medium text-[color:var(--color-alert-error)]">{error}</p>
                 </div>
               </div>
             )}
@@ -343,7 +343,7 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-primary px-4 py-3 text-white font-semibold shadow-lg shadow-primary/30 hover:bg-primary-dark active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-lg bg-[color:var(--color-yellow)] px-4 py-3 text-[color:var(--color-primary)] font-bold shadow-lg shadow-[color:var(--color-yellow)]/30 hover:bg-[color:var(--color-yellow)]/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[color:var(--color-border-medium)]"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -375,13 +375,13 @@ export default function SignUpPage() {
           </form>
 
           {/* Link a login */}
-          <div className="mt-6 border-t border-neutral-100 pt-6">
-            <p className="text-center text-xs text-slate-500 mb-3">
+          <div className="mt-6 border-t border-[color:var(--color-border-light)] pt-6">
+            <p className="text-center text-xs text-[color:var(--color-text-tertiary)] mb-3">
               ¿Ya tienes una cuenta?
             </p>
             <Link
               href="/login"
-              className="block w-full text-center rounded-lg border-2 border-neutral-200 px-4 py-2 text-slate-700 font-semibold hover:bg-neutral-50 active:scale-[0.98] transition-all"
+              className="block w-full text-center rounded-lg border-2 border-[color:var(--color-border-light)] px-4 py-2 text-[color:var(--color-text-secondary)] font-semibold hover:bg-[color:var(--color-background-light)] active:scale-[0.98] transition-all"
             >
               Iniciar sesión
             </Link>
@@ -392,7 +392,7 @@ export default function SignUpPage() {
 
         {/* Footer de la página */}
         <div className="mt-8 text-center">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[color:var(--color-text-tertiary)]">
             © {new Date().getFullYear()} Ner LaTalmud. Todos los derechos reservados.
           </p>
         </div>

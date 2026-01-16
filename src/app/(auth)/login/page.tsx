@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 export default function LoginPage() {
   const [correo, setCorreo] = useState('');
@@ -10,7 +9,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [devMagicLink, setDevMagicLink] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,15 +35,8 @@ export default function LoginPage() {
           data,
         });
         
-        // Si el usuario no tiene contraseña (usa Magic Link), mostrar mensaje especial
-        if (data.useMagicLink) {
-          setError(
-            'Este usuario usa autenticación por Magic Link. ' +
-            'Revisa tu correo para el link de acceso o solicita uno nuevo desde "¿Olvidaste tu contraseña?".'
-          );
-        } else {
-          setError(data.error || `Error al iniciar sesión (${response.status})`);
-        }
+        // B2-2: Mensaje genérico (no mencionar Magic Link)
+        setError(data.error || `Error al iniciar sesión (${response.status})`);
         setLoading(false);
         return;
       }
@@ -63,10 +54,10 @@ export default function LoginPage() {
       className="relative flex min-h-screen w-full flex-col items-center justify-center bg-paper p-6"
       style={{ fontFamily: 'Lexend, "Noto Sans", sans-serif' }}
     >
-      {/* Fondo decorativo */}
+      {/* Fondo decorativo con colores de la paleta */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -right-1/4 -top-1/4 h-96 w-96 rounded-full bg-primary/5 blur-3xl"></div>
-        <div className="absolute -bottom-1/4 -left-1/4 h-96 w-96 rounded-full bg-primary/5 blur-3xl"></div>
+        <div className="absolute -right-1/4 -top-1/4 h-96 w-96 rounded-full bg-[color:var(--color-yellow)]/10 blur-3xl"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 h-96 w-96 rounded-full bg-[color:var(--color-orange)]/10 blur-3xl"></div>
       </div>
 
       {/* Contenedor principal */}
@@ -74,9 +65,9 @@ export default function LoginPage() {
         {/* Logo/Header */}
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--color-yellow)]/20 border-2 border-[color:var(--color-yellow)]/30">
               <svg
-                className="h-10 w-10 text-primary"
+                className="h-10 w-10 text-[color:var(--color-primary)]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -90,17 +81,17 @@ export default function LoginPage() {
               </svg>
             </div>
           </div>
-          <h1 className="mb-2 text-3xl font-bold text-[#0d151b] tracking-tight">
+          <h1 className="mb-2 text-3xl font-bold text-[color:var(--color-text-primary)] tracking-tight">
             Ner LaTalmud
           </h1>
-          <p className="text-slate-600 text-sm font-medium">
+          <p className="text-[color:var(--color-text-secondary)] text-sm font-medium">
             Sistema de Diagnóstico Académico de Guemará
           </p>
         </div>
 
         {/* Card de Login */}
-        <div className="rounded-2xl bg-white p-8 shadow-lg shadow-primary/10 border border-neutral-100">
-          <h2 className="mb-6 text-xl font-bold text-[#0d151b] text-center">
+          <div className="rounded-2xl bg-[color:var(--color-background-white)] p-8 shadow-lg shadow-[color:var(--color-yellow)]/10 border border-[color:var(--color-border-light)]">
+          <h2 className="mb-6 text-xl font-bold text-[color:var(--color-text-primary)] text-center">
             Iniciar Sesión
           </h2>
 
@@ -108,7 +99,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="correo"
-                className="mb-2 block text-sm font-semibold text-slate-700"
+                className="mb-2 block text-sm font-semibold text-[color:var(--color-text-secondary)]"
               >
                 Correo electrónico
               </label>
@@ -120,7 +111,7 @@ export default function LoginPage() {
                 required
                 disabled={loading}
                 autoComplete="email"
-                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
+                className="w-full rounded-lg border border-[color:var(--color-border-light)] bg-[color:var(--color-background-white)] px-4 py-3 text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-yellow)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-yellow)]/20 transition-colors disabled:bg-[color:var(--color-background-light)] disabled:cursor-not-allowed"
                 placeholder="tu@correo.com"
               />
             </div>
@@ -128,7 +119,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="mb-2 block text-sm font-semibold text-slate-700"
+                className="mb-2 block text-sm font-semibold text-[color:var(--color-text-secondary)]"
               >
                 Contraseña
               </label>
@@ -141,14 +132,14 @@ export default function LoginPage() {
                   required
                   disabled={loading}
                   autoComplete="current-password"
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 pr-12 text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg border border-[color:var(--color-border-light)] bg-[color:var(--color-background-white)] px-4 py-3 pr-12 text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors disabled:bg-[color:var(--color-background-light)] disabled:cursor-not-allowed"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)] transition-colors disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     {showPassword ? 'visibility_off' : 'visibility'}
@@ -159,10 +150,10 @@ export default function LoginPage() {
 
 
             {error && (
-              <div className="rounded-lg bg-red-50 border border-red-100 p-3">
+              <div className="rounded-lg bg-[color:var(--color-alert-error-bg)] border border-[color:var(--color-alert-error-border)] p-3">
                 <div className="flex items-center gap-2">
                   <svg
-                    className="h-5 w-5 text-red-600"
+                    className="h-5 w-5 text-[color:var(--color-alert-error)]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -174,25 +165,7 @@ export default function LoginPage() {
                       d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <p className="text-sm font-medium text-red-700">{error}</p>
-                </div>
-              </div>
-            )}
-
-            {devMagicLink && (
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
-                <div className="mb-2">
-                  <p className="text-sm font-semibold text-amber-900">
-                    Modo desarrollo: acceso temporal
-                  </p>
-                </div>
-                <div className="mt-2">
-                  <p className="text-xs text-amber-800 mb-2">Magic Link:</p>
-                  <div className="bg-white rounded border border-amber-200 p-2 break-all">
-                    <code className="text-xs text-amber-900 select-all">
-                      {devMagicLink}
-                    </code>
-                  </div>
+                  <p className="text-sm font-medium text-[color:var(--color-alert-error)]">{error}</p>
                 </div>
               </div>
             )}
@@ -200,7 +173,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-primary px-4 py-3 text-white font-semibold shadow-lg shadow-primary/30 hover:bg-primary-dark active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-lg bg-[color:var(--color-yellow)] px-4 py-3 text-[color:var(--color-primary)] font-bold shadow-lg shadow-[color:var(--color-yellow)]/30 hover:bg-[color:var(--color-yellow)]/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[color:var(--color-border-medium)]"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -231,32 +204,16 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Links adicionales */}
-          <div className="mt-6 space-y-3">
-            <div className="text-center">
-              <Link
-                href="/forgot-password"
-                className="text-sm text-primary hover:underline font-medium"
-              >
-                ¿Olvidaste tu contraseña?
-              </Link>
-            </div>
-            <div className="border-t border-neutral-100 pt-4">
-              <p className="text-center text-xs text-slate-500 mb-3">
-                ¿No tienes una cuenta?
-              </p>
-              <Link
-                href="/signup"
-                className="block w-full text-center rounded-lg border-2 border-primary px-4 py-2 text-primary font-semibold hover:bg-primary/5 active:scale-[0.98] transition-all"
-              >
-                Crear cuenta
-              </Link>
-            </div>
+          {/* Mensaje informativo (B2-2: links removidos) */}
+          <div className="mt-6 border-t border-[color:var(--color-border-light)] pt-4">
+            <p className="text-center text-xs text-[color:var(--color-text-tertiary)]">
+              El acceso es proporcionado por el administrador
+            </p>
           </div>
 
           {/* Footer del card */}
-          <div className="mt-6 border-t border-neutral-100 pt-6">
-            <p className="text-center text-xs text-slate-500">
+          <div className="mt-6 border-t border-[color:var(--color-border-light)] pt-6">
+            <p className="text-center text-xs text-[color:var(--color-text-tertiary)]">
               Acceso exclusivo para personal autorizado
             </p>
           </div>
@@ -264,7 +221,7 @@ export default function LoginPage() {
 
         {/* Footer de la página */}
         <div className="mt-8 text-center">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[color:var(--color-text-tertiary)]">
             © {new Date().getFullYear()} Ner LaTalmud. Todos los derechos reservados.
           </p>
         </div>
