@@ -37,15 +37,15 @@ export function PerfilDiagnosticoView({
   const getNivelColor = (nivel: string) => {
     switch (nivel) {
       case 'sobresaliente':
-        return 'bg-green-100 text-green-700';
+        return 'bg-[color:var(--color-alert-success-bg)] text-[color:var(--color-alert-success)]';
       case 'avanzado':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-[color:var(--color-alert-info-bg)] text-[color:var(--color-alert-info)]';
       case 'bueno':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-[color:var(--color-alert-warning-bg)] text-[color:var(--color-alert-warning)]';
       case 'regular':
-        return 'bg-orange-100 text-orange-700';
+        return 'bg-[color:var(--color-alert-warning-bg)] text-[color:var(--color-alert-warning)]';
       default:
-        return 'bg-red-100 text-red-700';
+        return 'bg-[color:var(--color-alert-error-bg)] text-[color:var(--color-alert-error)]';
     }
   };
 
@@ -54,21 +54,21 @@ export function PerfilDiagnosticoView({
     return (
       <div className="relative flex h-auto min-h-screen w-full flex-col max-w-md mx-auto bg-paper shadow-2xl overflow-x-hidden border-x border-neutral-100/50">
         {/* Header Skeleton */}
-        <div className="sticky top-0 z-50 flex items-center bg-paper/95 backdrop-blur-sm p-4 pb-2 justify-between border-b border-neutral-200/50">
-          <div className="size-10 rounded-full bg-neutral-200 animate-pulse"></div>
-          <div className="h-5 w-32 bg-neutral-200 rounded animate-pulse"></div>
-          <div className="size-10 rounded-full bg-neutral-200 animate-pulse"></div>
+        <div className="sticky top-0 z-50 flex items-center bg-paper/95 backdrop-blur-sm p-4 pb-2 justify-between border-b border-[color:var(--color-border-light)]">
+          <div className="size-10 rounded-full bg-[color:var(--color-background-light)] animate-pulse"></div>
+          <div className="h-5 w-32 bg-[color:var(--color-background-light)] rounded animate-pulse"></div>
+          <div className="size-10 rounded-full bg-[color:var(--color-background-light)] animate-pulse"></div>
         </div>
 
         {/* Content Skeleton */}
         <div className="px-4 py-8 space-y-6">
           <div className="flex flex-col items-center space-y-4">
-            <div className="h-28 w-28 rounded-full bg-neutral-200 animate-pulse"></div>
-            <div className="h-6 w-48 bg-neutral-200 rounded animate-pulse"></div>
-            <div className="h-4 w-32 bg-neutral-200 rounded animate-pulse"></div>
+            <div className="h-28 w-28 rounded-full bg-[color:var(--color-background-light)] animate-pulse"></div>
+            <div className="h-6 w-48 bg-[color:var(--color-background-light)] rounded animate-pulse"></div>
+            <div className="h-4 w-32 bg-[color:var(--color-background-light)] rounded animate-pulse"></div>
           </div>
-          <div className="h-72 bg-neutral-100 rounded-xl animate-pulse"></div>
-          <div className="h-64 bg-neutral-100 rounded-xl animate-pulse"></div>
+          <div className="h-72 bg-[color:var(--color-background-card)] rounded-xl animate-pulse"></div>
+          <div className="h-64 bg-[color:var(--color-background-card)] rounded-xl animate-pulse"></div>
         </div>
       </div>
     );
@@ -95,12 +95,12 @@ export function PerfilDiagnosticoView({
 
         {/* Error State */}
         <div className="flex flex-col items-center justify-center px-4 py-16">
-          <div className="bg-red-50 border border-red-100 rounded-xl p-6 max-w-sm">
+          <div className="bg-[color:var(--color-alert-error-bg)] border border-[color:var(--color-alert-error-border)] rounded-xl p-6 max-w-sm">
             <div className="flex items-center gap-3 mb-2">
-              <span className="material-symbols-outlined text-red-600 text-[24px]">error</span>
-              <h3 className="text-red-800 font-bold text-lg">Error al cargar perfil</h3>
+              <span className="material-symbols-outlined text-[color:var(--color-alert-error)] text-[24px]">error</span>
+              <h3 className="text-[color:var(--color-alert-error)] font-bold text-lg">Error al cargar perfil</h3>
             </div>
-            <p className="text-red-700 text-sm">{error}</p>
+            <p className="text-[color:var(--color-alert-error)] text-sm">{error}</p>
           </div>
         </div>
       </div>
@@ -128,10 +128,10 @@ export function PerfilDiagnosticoView({
 
         {/* Empty State */}
         <div className="flex flex-col items-center justify-center px-4 py-16">
-          <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-6 max-w-sm text-center">
-            <span className="material-symbols-outlined text-neutral-400 text-[48px] mb-4 block">person_off</span>
-            <h3 className="text-neutral-700 font-bold text-lg mb-2">No hay datos disponibles</h3>
-            <p className="text-neutral-500 text-sm">No se encontró información del perfil de diagnóstico.</p>
+          <div className="bg-[color:var(--color-background-card)] border border-[color:var(--color-border-light)] rounded-xl p-6 max-w-sm text-center">
+            <span className="material-symbols-outlined text-[color:var(--color-text-tertiary)] text-[48px] mb-4 block opacity-50">person_off</span>
+            <h3 className="text-[color:var(--color-text-primary)] font-bold text-lg mb-2">No hay datos disponibles</h3>
+            <p className="text-[color:var(--color-text-secondary)] text-sm">No se encontró información del perfil de diagnóstico.</p>
           </div>
         </div>
       </div>
@@ -290,8 +290,13 @@ export function PerfilDiagnosticoView({
               ))}
             </div>
           ) : (
-            <div className="p-8 text-center">
-              <p className="text-slate-400 text-sm">No hay evaluaciones registradas</p>
+            <div className="bg-[color:var(--color-background-card)] border border-[color:var(--color-border-light)] rounded-lg p-8 text-center">
+              <div className="flex justify-center mb-3">
+                <span className="material-symbols-outlined text-[color:var(--color-text-tertiary)] text-[32px] opacity-50">
+                  assessment
+                </span>
+              </div>
+              <p className="text-[color:var(--color-text-secondary)] text-sm">No hay evaluaciones registradas</p>
             </div>
           )}
         </div>

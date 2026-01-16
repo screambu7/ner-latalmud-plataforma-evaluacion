@@ -303,9 +303,18 @@ export default async function AdminDashboardPage() {
           </div>
 
           {data.evaluacionesRecientes.length === 0 ? (
-            <div className="text-center py-8 text-[color:var(--color-text-tertiary)]">
-              <p>No hay evaluaciones registradas aún.</p>
-              <p className="text-sm mt-2">Las evaluaciones aparecerán aquí cuando se creen.</p>
+            <div className="bg-[color:var(--color-background-card)] border border-[color:var(--color-border-light)] rounded-lg p-12 text-center">
+              <div className="flex justify-center mb-4">
+                <span className="material-symbols-outlined text-[48px] text-[color:var(--color-text-tertiary)] opacity-50">
+                  assessment
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-[color:var(--color-text-primary)] mb-2">
+                No hay evaluaciones registradas aún
+              </h3>
+              <p className="text-sm text-[color:var(--color-text-secondary)]">
+                Las evaluaciones aparecerán aquí cuando los evaluadores comiencen a crear evaluaciones.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">

@@ -76,8 +76,15 @@ export default function AlumnosPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Alumnos</h1>
-        <p>Cargando...</p>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Alumnos</h1>
+          <div className="h-10 w-32 bg-[color:var(--color-background-light)] rounded-md animate-pulse"></div>
+        </div>
+        <div className="space-y-4">
+          <div className="h-12 bg-[color:var(--color-background-card)] rounded-lg animate-pulse"></div>
+          <div className="h-12 bg-[color:var(--color-background-card)] rounded-lg animate-pulse"></div>
+          <div className="h-12 bg-[color:var(--color-background-card)] rounded-lg animate-pulse"></div>
+        </div>
       </div>
     );
   }
@@ -101,7 +108,25 @@ export default function AlumnosPage() {
       )}
 
       {alumnos.length === 0 ? (
-        <p>No hay alumnos registrados.</p>
+        <div className="bg-[color:var(--color-background-card)] border border-[color:var(--color-border-light)] rounded-lg p-12 text-center">
+          <div className="flex justify-center mb-4">
+            <span className="material-symbols-outlined text-[48px] text-[color:var(--color-text-tertiary)] opacity-50">
+              school
+            </span>
+          </div>
+          <h3 className="text-lg font-semibold text-[color:var(--color-text-primary)] mb-2">
+            No hay alumnos registrados
+          </h3>
+          <p className="text-sm text-[color:var(--color-text-secondary)] mb-6">
+            Comienza agregando el primer alumno al sistema.
+          </p>
+          <button
+            onClick={() => router.push('/alumnos/nuevo')}
+            className="px-4 py-2 bg-[color:var(--color-primary)] text-[color:var(--color-text-inverse)] rounded-md hover:opacity-90 text-sm font-medium"
+          >
+            Agregar Primer Alumno
+          </button>
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border border-[color:var(--color-border-light)]">

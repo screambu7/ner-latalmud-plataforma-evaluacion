@@ -114,8 +114,21 @@ export default function EvaluarPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Nueva Evaluación</h1>
-        <p>Cargando...</p>
+        <h1 className="text-2xl font-bold mb-6">Nueva Evaluación</h1>
+        <div className="max-w-2xl space-y-6">
+          <div className="space-y-2">
+            <div className="h-4 w-24 bg-[color:var(--color-background-light)] rounded animate-pulse"></div>
+            <div className="h-10 bg-[color:var(--color-background-card)] rounded-md animate-pulse"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="h-4 w-32 bg-[color:var(--color-background-light)] rounded animate-pulse"></div>
+            <div className="h-10 bg-[color:var(--color-background-card)] rounded-md animate-pulse"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="h-4 w-28 bg-[color:var(--color-background-light)] rounded animate-pulse"></div>
+            <div className="h-10 bg-[color:var(--color-background-card)] rounded-md animate-pulse"></div>
+          </div>
+        </div>
       </div>
     );
   }
